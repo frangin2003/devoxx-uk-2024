@@ -1,0 +1,8 @@
+presidio_analyzer
+langchain
+langchain-experimental
+langchain-openai
+presidio-analyzer
+presidio-anonymizer
+spacy
+Faker
