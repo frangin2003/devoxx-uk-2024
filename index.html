@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Pelican ride</title>
+<style>
+  :root { --bg:#eef3f7; --fg:#23262a; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#10151c; --fg:#e6e8ea; } }
+  body.force-light { --bg:#eef3f7; --fg:#23262a; }
+  body.force-dark  { --bg:#0b1016; --fg:#e6e8ea; }
+  body { margin:0; min-height:100vh; display:grid; place-items:center;
+         background:var(--bg); color:var(--fg);
+         font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }
+  .wrap { display:grid; gap:16px; justify-items:center; padding:24px; }
+  .stage { width:min(86vw, 520px); }
+  .stage svg { width:100%; height:auto; display:block; }
+  .btns { display:flex; gap:8px; }
+  button { font:inherit; font-size:13px; padding:8px 14px; border-radius:9px;
+           border:1px solid #8c959e66; background:transparent; color:inherit; cursor:pointer; }
+  button.on { background:var(--fg); color:var(--bg); border-color:var(--fg); }
+  p { margin:0; font-size:13px; opacity:.72; max-width:44ch; text-align:center; line-height:1.5; }
+</style></head>
+<body>
+<div class="wrap">
+  <div class="stage">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600" width="600" height="600"
+     role="img" aria-label="A pelican in a sailor cap rides a bicycle along a coast road with the g3po robot on the back seat. Clouds drift, the sea sparkles, and a bump in the road startles them both.">
+<title>Pelican and g3po by the sea</title>
+<defs>
+  <clipPath id="frame"><rect x="0" y="0" width="600" height="600" rx="44" ry="44"/></clipPath>
+  <clipPath id="seaclip"><rect x="0" y="250" width="600" height="140"/></clipPath>
+  <linearGradient id="seaGrad" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" class="sea-a"/><stop offset="1" class="sea-b"/>
+  </linearGradient>
+  <radialGradient id="sunGlow">
+    <stop offset="0" stop-color="#ffd34d" stop-opacity=".55"/>
+    <stop offset="55%" stop-color="#ffcf3f" stop-opacity=".18"/>
+    <stop offset="100%" stop-color="#ffcf3f" stop-opacity="0"/>
+  </radialGradient>
+  <radialGradient id="moonGlow">
+    <stop offset="0" stop-color="#dfe8ff" stop-opacity=".5"/>
+    <stop offset="60%" stop-color="#cfe0ff" stop-opacity=".14"/>
+    <stop offset="100%" stop-color="#cfe0ff" stop-opacity="0"/>
+  </radialGradient>
+  <linearGradient id="roadGrad" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" class="road-a"/><stop offset="1" class="road-b"/>
+  </linearGradient>
+</defs>
+
+<style>
+  svg { --sea-a:#4a9ad8; --sea-b:#20609e; --foam:#eaf4ff; --sand:#e9d9ae;
+        --road-a:#7a838d; --road-b:#5b636c; --line:#f2f2ef; --verge:#7fae5c;
+        --rock:#8c959e; --shadow:rgba(20,24,30,.18); }
+  .sea-a { stop-color:var(--sea-a); } .sea-b { stop-color:var(--sea-b); }
+  .road-a { stop-color:var(--road-a); } .road-b { stop-color:var(--road-b); }
+
+  .night-only { opacity:0; }
+  .day-only   { opacity:1; }
+
+  @media (prefers-color-scheme: dark) {
+    svg { --sea-a:#1d4a76; --sea-b:#0d2740; --foam:#9dc4e8; --sand:#8a7c5c;
+          --road-a:#454b53; --road-b:#2f343a; --line:#c9ccd0; --verge:#3d5c37;
+          --rock:#5b636c; --shadow:rgba(0,0,0,.32); }
+    .night-only { opacity:1; }
+    .day-only   { opacity:0; }
+  }
+  /* manual override for sites that switch themes themselves */
+  svg.night { --sea-a:#1d4a76; --sea-b:#0d2740; --foam:#9dc4e8; --sand:#8a7c5c;
+        --road-a:#454b53; --road-b:#2f343a; --line:#c9ccd0; --verge:#3d5c37;
+        --rock:#5b636c; --shadow:rgba(0,0,0,.32); }
+  svg.night .night-only { opacity:1; }
+  svg.night .day-only { opacity:0; }
+  svg.day .night-only { opacity:0; }
+  svg.day .day-only { opacity:1; }
+
+  /* ---- scrollers: each travels exactly one tile per cycle ---- */
+  .scroll-cloud { animation: sc600 10s linear infinite; }
+  .scroll-sea   { animation: sc200 2s  linear infinite; }
+  .scroll-road  { animation: sc80  0.5s linear infinite; }
+  .scroll-verge { animation: sc240 1s  linear infinite; }
+  .scroll-bump  { animation: bump1600 10s linear infinite; }
+  @keyframes sc600 { to { transform: translateX(-600px); } }
+  @keyframes sc200 { to { transform: translateX(-200px); } }
+  @keyframes sc80  { to { transform: translateX(-80px);  } }
+  @keyframes sc240 { to { transform: translateX(-240px); } }
+  @keyframes bump1600 { to { transform: translateX(-1600px); } }
+
+  /* ---- sky ---- */
+  .sun { fill:#ffcc33; }
+  .rays { stroke:#ffd34d; stroke-width:5; stroke-linecap:round;
+           transform-origin:470px 96px; animation: turn30 10s linear infinite; }
+  @keyframes turn30 { to { transform: rotate(30deg); } }   /* 12 rays: seamless */
+  .sunpulse { transform-origin:470px 96px; animation: breathe 5s ease-in-out infinite; }
+  @keyframes breathe { 0%,100% { transform:scale(1); opacity:.95 }
+                        50% { transform:scale(1.06); opacity:1 } }
+  .moon { fill:#f2f1e6; }
+  .crater { fill:#d9d8cb; }
+  .star { fill:#fdfbf2; animation-name: twinkle; animation-iteration-count:infinite;
+           animation-timing-function: ease-in-out; }
+  .starbig circle { fill:#ffffff; }
+  .starbig path { stroke:#ffffff; stroke-width:.9; stroke-linecap:round; opacity:.75; }
+  .starbig { animation-name: twinkle; animation-iteration-count:infinite;
+              animation-timing-function: ease-in-out; }
+  @keyframes twinkle { 0%,100% { opacity:.25 } 50% { opacity:1 } }
+  .starfield { animation: drift 10s ease-in-out infinite; }
+  @keyframes drift { 0%,100% { transform:translateX(0) } 50% { transform:translateX(-14px) } }
+  .cloud { fill:#ffffff; }
+
+  /* ---- sea ---- */
+  .waves path { fill:none; stroke:var(--foam); stroke-width:2.6; stroke-linecap:round; }
+  .glitter { fill:#ffe9a8; animation: shimmer 2.5s ease-in-out infinite; }
+  .glitter2 { animation-delay:-1.25s; }
+  @keyframes shimmer { 0%,100% { opacity:.25 } 50% { opacity:.8 } }
+  .foamline { fill:none; stroke:var(--foam); stroke-width:3; stroke-linecap:round; opacity:.5; }
+  .sail { fill:#fbfbf7; } .sail2 { fill:#e4e3da; } .hull { fill:#3a3f45; }
+
+  /* ---- road ---- */
+  .road { fill:url(#roadGrad); }
+  .line { fill:var(--line); opacity:.85; }
+  .kerb { fill:var(--sand); }
+  .verge { fill:var(--verge); }
+  .tuft { fill:var(--verge); }
+  .rock { fill:var(--rock); }
+  .bump { fill:var(--road-a); stroke:var(--road-b); stroke-width:2; }
+  .bumptop { fill:none; stroke:var(--line); stroke-width:2.4; stroke-linecap:round; opacity:.5; }
+
+  /* ---- the rig: two jolts, timed to the bump reaching each wheel ---- */
+  .rig { animation: jolt 10s linear infinite; }
+  @keyframes jolt {
+    0%,50%   { transform: translateY(0) rotate(0deg); }
+    52%      { transform: translateY(-9px) rotate(-1.6deg); }
+    54.5%    { transform: translateY(2px) rotate(.6deg); }
+    56.5%    { transform: translateY(0) rotate(0deg); }
+    59.5%    { transform: translateY(-7px) rotate(1.4deg); }
+    61.5%    { transform: translateY(1.5px) rotate(-.5deg); }
+    63.5%,100% { transform: translateY(0) rotate(0deg); }
+  }
+  .rig { transform-origin:300px 500px; }
+  .bob { animation: bob 2.5s ease-in-out infinite; transform-origin:300px 460px; }
+  @keyframes bob { 0%,100% { transform:translateY(0) } 50% { transform:translateY(-2.5px) } }
+  .robot { animation: jolt2 10s linear infinite; transform-origin:239px 440px; }
+  @keyframes jolt2 {
+    0%,50.5% { transform: translateY(0) rotate(0deg); }
+    52.5%    { transform: translateY(-13px) rotate(-3deg); }
+    55%      { transform: translateY(3px) rotate(1.4deg); }
+    57%      { transform: translateY(-2px) rotate(-.6deg); }
+    58.5%    { transform: translateY(0) rotate(0deg); }
+    60%      { transform: translateY(-9px) rotate(2.2deg); }
+    62.5%    { transform: translateY(2px) rotate(-.8deg); }
+    64.5%,100% { transform: translateY(0) rotate(0deg); }
+  }
+  .spin { animation: roll 1.25s linear infinite; }   /* 8 turns per loop */
+  @keyframes roll { to { transform: rotate(360deg); } }
+  .crank { animation: roll 2.5s linear infinite; transform-origin:300px 486px; }
+  .legbob { animation: legbob 2.5s ease-in-out infinite; transform-origin:300px 420px; }
+  @keyframes legbob { 0%,100% { transform:translateY(0) } 50% { transform:translateY(3px) } }
+
+  /* ---- faces: startled through the bump, smiling the rest of the time ---- */
+  .calm     { animation: calm 10s steps(1,end) infinite; }
+  .startled { animation: startled 10s steps(1,end) infinite; }
+  @keyframes calm     { 0%,50.5% { opacity:1 } 51% { opacity:0 }
+                         66% { opacity:0 } 66.5%,100% { opacity:1 } }
+  @keyframes startled { 0%,50.5% { opacity:0 } 51% { opacity:1 }
+                         66% { opacity:1 } 66.5%,100% { opacity:0 } }
+
+  .tyre { fill:none; stroke:#2b2f34; stroke-width:6; }
+  .spoke { stroke:#c9ccd0; stroke-width:1.6; }
+  .hub { fill:#c9ccd0; }
+  .frame { fill:none; stroke:#c0392b; stroke-width:6; stroke-linecap:round; }
+  .frame2 { fill:none; stroke:#9c2f22; stroke-width:5; stroke-linecap:round; }
+  .rack { fill:#8c959e; }
+  .pel { fill:#f7f6f1; }
+  .pel-sh { fill:#e2e0d6; }
+  .bill { fill:#f2a03c; }
+  .pouch { fill:#f8bd63; }
+  .leg { stroke:#f2a03c; stroke-width:7; stroke-linecap:round; fill:none; }
+  .cap { fill:#2f6fb5; }
+  .capband { fill:#f7f6f1; }
+  .ink { fill:none; stroke:#23262a; stroke-width:3.2; stroke-linecap:round; }
+  .pupil { fill:#23262a; }
+  .eyewhite { fill:#ffffff; }
+  .bot { fill:#f2c11c; }
+  .bot-d { fill:#e0ac12; }
+  .blush { fill:#ef8f68; opacity:.85; }
+  .panel { fill:#c9ccd0; }
+  .sq1 { fill:#2f6fb5; } .sq2 { fill:#c0392b; }
+  .antenna { stroke:#b9bcc0; stroke-width:3; stroke-linecap:round; }
+  .antenna-tip { fill:#c0392b; animation: blink 2.5s steps(1,end) infinite; }
+  @keyframes blink { 0%,60% { opacity:1 } 61%,100% { opacity:.3 } }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; }
+    .startled { opacity:0; }
+  }
+</style>
+
+<g clip-path="url(#frame)">
+
+  <!-- ================= sky (transparent) ================= -->
+  <g class="day-only">
+    <circle cx="470" cy="96" r="120" fill="url(#sunGlow)"/>
+    <g class="sunpulse">
+      <g class="rays">
+        <line x1="470" y1="96" x2="548.0" y2="96.0"/><line x1="470" y1="96" x2="537.5" y2="135.0"/><line x1="470" y1="96" x2="509.0" y2="163.5"/><line x1="470" y1="96" x2="470.0" y2="174.0"/><line x1="470" y1="96" x2="431.0" y2="163.5"/><line x1="470" y1="96" x2="402.5" y2="135.0"/><line x1="470" y1="96" x2="392.0" y2="96.0"/><line x1="470" y1="96" x2="402.5" y2="57.0"/><line x1="470" y1="96" x2="431.0" y2="28.5"/><line x1="470" y1="96" x2="470.0" y2="18.0"/><line x1="470" y1="96" x2="509.0" y2="28.5"/><line x1="470" y1="96" x2="537.5" y2="57.0"/>
+      </g>
+      <circle class="sun" cx="470" cy="96" r="42"/>
+    </g>
+  </g>
+
+  <g class="night-only">
+    <circle cx="470" cy="96" r="130" fill="url(#moonGlow)"/>
+    <circle class="moon" cx="470" cy="96" r="40"/>
+    <circle class="crater" cx="456" cy="84" r="8"/>
+    <circle class="crater" cx="482" cy="106" r="6"/>
+    <circle class="crater" cx="464" cy="112" r="4"/>
+    <g class="starfield">
+    <circle class="star" cx="196.4" cy="45.1" r="1.61" style="animation-duration:2s;animation-delay:-1.64s"/>
+    <circle class="star" cx="61.3" cy="134.1" r="1.97" style="animation-duration:2s;animation-delay:-0.07s"/>
+    <circle class="star" cx="261.0" cy="28.4" r="0.83" style="animation-duration:2.5s;animation-delay:-0.15s"/>
+    <circle class="star" cx="338.5" cy="209.2" r="1.58" style="animation-duration:5s;animation-delay:-4.74s"/>
+    <circle class="star" cx="345.3" cy="95.7" r="2.07" style="animation-duration:2s;animation-delay:-1.11s"/>
+    <circle class="star" cx="84.3" cy="100.3" r="1.46" style="animation-duration:5s;animation-delay:-1.54s"/>
+    <circle class="star" cx="485.9" cy="51.2" r="1.51" style="animation-duration:5s;animation-delay:-0.94s"/>
+    <circle class="star" cx="63.3" cy="160.7" r="1.49" style="animation-duration:5s;animation-delay:-1.03s"/>
+    <circle class="star" cx="406.1" cy="102.1" r="1.14" style="animation-duration:5s;animation-delay:-4.62s"/>
+    <circle class="star" cx="218.6" cy="65.2" r="0.95" style="animation-duration:2s;animation-delay:-0.16s"/>
+    <circle class="star" cx="182.5" cy="116.0" r="1.18" style="animation-duration:2.5s;animation-delay:-0.72s"/>
+    <circle class="star" cx="582.3" cy="38.3" r="1.29" style="animation-duration:2.5s;animation-delay:-0.38s"/>
+    <circle class="star" cx="293.5" cy="22.1" r="1.64" style="animation-duration:5s;animation-delay:-2.87s"/>
+    <circle class="star" cx="520.8" cy="78.6" r="1.67" style="animation-duration:5s;animation-delay:-2.48s"/>
+    <circle class="star" cx="474.6" cy="28.2" r="0.83" style="animation-duration:2.5s;animation-delay:-1.19s"/>
+    <circle class="star" cx="396.5" cy="26.5" r="1.68" style="animation-duration:5s;animation-delay:-2.89s"/>
+    <circle class="star" cx="406.6" cy="105.8" r="1.70" style="animation-duration:5s;animation-delay:-1.74s"/>
+    <circle class="star" cx="559.1" cy="87.2" r="1.56" style="animation-duration:2.5s;animation-delay:-0.15s"/>
+    <circle class="star" cx="457.7" cy="40.6" r="1.05" style="animation-duration:2.5s;animation-delay:-2.29s"/>
+    <circle class="star" cx="297.9" cy="48.3" r="1.26" style="animation-duration:2.5s;animation-delay:-2.21s"/>
+    <circle class="star" cx="487.7" cy="192.0" r="1.09" style="animation-duration:2.5s;animation-delay:-2.47s"/>
+    <circle class="star" cx="407.4" cy="92.4" r="1.02" style="animation-duration:2s;animation-delay:-0.35s"/>
+    <circle class="star" cx="142.4" cy="62.1" r="1.38" style="animation-duration:5s;animation-delay:-0.91s"/>
+    <circle class="star" cx="171.8" cy="44.0" r="1.45" style="animation-duration:5s;animation-delay:-2.83s"/>
+    <circle class="star" cx="566.4" cy="156.2" r="1.42" style="animation-duration:5s;animation-delay:-3.27s"/>
+    <circle class="star" cx="441.0" cy="108.1" r="1.92" style="animation-duration:5s;animation-delay:-3.99s"/>
+    <circle class="star" cx="236.7" cy="96.2" r="0.84" style="animation-duration:5s;animation-delay:-2.00s"/>
+    <circle class="star" cx="118.1" cy="216.8" r="1.32" style="animation-duration:2s;animation-delay:-0.68s"/>
+    <circle class="star" cx="36.9" cy="14.0" r="0.91" style="animation-duration:2s;animation-delay:-1.90s"/>
+    <circle class="star" cx="366.9" cy="28.5" r="0.99" style="animation-duration:2.5s;animation-delay:-0.37s"/>
+    <circle class="star" cx="154.3" cy="85.6" r="1.21" style="animation-duration:2s;animation-delay:-0.23s"/>
+    <circle class="star" cx="293.0" cy="215.4" r="1.37" style="animation-duration:2.5s;animation-delay:-0.21s"/>
+    <circle class="star" cx="66.1" cy="84.6" r="1.07" style="animation-duration:5s;animation-delay:-0.81s"/>
+    <circle class="star" cx="19.6" cy="209.9" r="1.44" style="animation-duration:2s;animation-delay:-1.38s"/>
+    <circle class="star" cx="543.5" cy="170.2" r="1.12" style="animation-duration:5s;animation-delay:-4.32s"/>
+    <circle class="star" cx="415.4" cy="67.8" r="1.21" style="animation-duration:2s;animation-delay:-0.71s"/>
+    <circle class="star" cx="137.0" cy="125.6" r="1.40" style="animation-duration:5s;animation-delay:-1.12s"/>
+    <circle class="star" cx="483.2" cy="216.9" r="1.89" style="animation-duration:2s;animation-delay:-1.64s"/>
+    <circle class="star" cx="441.0" cy="60.7" r="1.42" style="animation-duration:2.5s;animation-delay:-1.83s"/>
+    <circle class="star" cx="587.9" cy="176.8" r="1.36" style="animation-duration:2s;animation-delay:-1.39s"/>
+    <circle class="star" cx="568.4" cy="106.1" r="2.01" style="animation-duration:2.5s;animation-delay:-2.39s"/>
+    <circle class="star" cx="220.4" cy="59.4" r="1.02" style="animation-duration:2s;animation-delay:-0.68s"/>
+    <circle class="star" cx="289.8" cy="217.0" r="1.55" style="animation-duration:2s;animation-delay:-0.96s"/>
+    <circle class="star" cx="390.0" cy="178.7" r="0.82" style="animation-duration:5s;animation-delay:-0.60s"/>
+    <circle class="star" cx="234.5" cy="160.6" r="0.98" style="animation-duration:2s;animation-delay:-0.87s"/>
+    <circle class="star" cx="379.9" cy="31.9" r="2.02" style="animation-duration:5s;animation-delay:-1.98s"/>
+    <circle class="star" cx="242.0" cy="209.0" r="1.71" style="animation-duration:2s;animation-delay:-1.99s"/>
+    <circle class="star" cx="22.2" cy="135.7" r="1.35" style="animation-duration:5s;animation-delay:-0.73s"/>
+    <circle class="star" cx="492.0" cy="215.9" r="1.62" style="animation-duration:2.5s;animation-delay:-0.39s"/>
+    <circle class="star" cx="328.4" cy="18.4" r="1.82" style="animation-duration:5s;animation-delay:-3.25s"/>
+    <circle class="star" cx="315.6" cy="206.3" r="1.31" style="animation-duration:2s;animation-delay:-1.65s"/>
+    <circle class="star" cx="130.1" cy="65.9" r="1.11" style="animation-duration:2s;animation-delay:-1.53s"/>
+    <circle class="star" cx="197.7" cy="126.1" r="1.87" style="animation-duration:2s;animation-delay:-1.82s"/>
+    <circle class="star" cx="214.0" cy="108.4" r="1.52" style="animation-duration:5s;animation-delay:-2.10s"/>
+    <circle class="star" cx="545.6" cy="117.3" r="1.44" style="animation-duration:5s;animation-delay:-2.55s"/>
+    <circle class="star" cx="519.2" cy="174.0" r="1.55" style="animation-duration:2s;animation-delay:-0.34s"/>
+    <circle class="star" cx="284.4" cy="163.4" r="1.48" style="animation-duration:2.5s;animation-delay:-1.71s"/>
+    <circle class="star" cx="318.1" cy="113.4" r="1.79" style="animation-duration:5s;animation-delay:-0.28s"/>
+    <circle class="star" cx="118.5" cy="22.7" r="0.84" style="animation-duration:2.5s;animation-delay:-1.40s"/>
+    <circle class="star" cx="452.9" cy="202.0" r="1.32" style="animation-duration:5s;animation-delay:-4.87s"/>
+    <circle class="star" cx="362.4" cy="55.1" r="1.09" style="animation-duration:5s;animation-delay:-2.67s"/>
+    <circle class="star" cx="287.1" cy="207.9" r="1.68" style="animation-duration:2.5s;animation-delay:-2.31s"/>
+    <circle class="star" cx="530.9" cy="55.7" r="1.33" style="animation-duration:2.5s;animation-delay:-0.30s"/>
+    <circle class="star" cx="266.0" cy="28.9" r="1.04" style="animation-duration:2s;animation-delay:-0.43s"/>
+    <g class="starbig" style="animation-duration:2.5s;animation-delay:-2.35s"><circle cx="197.4" cy="45.2" r="1.9"/><path d="M192.4,45.2 L202.4,45.2 M197.4,40.2 L197.4,50.2"/></g>
+    <g class="starbig" style="animation-duration:5s;animation-delay:-4.41s"><circle cx="374.6" cy="85.4" r="1.9"/><path d="M369.6,85.4 L379.6,85.4 M374.6,80.4 L374.6,90.4"/></g>
+    <g class="starbig" style="animation-duration:2.5s;animation-delay:-1.00s"><circle cx="543.1" cy="61.2" r="1.9"/><path d="M538.1,61.2 L548.1,61.2 M543.1,56.2 L543.1,66.2"/></g>
+    <g class="starbig" style="animation-duration:2.5s;animation-delay:-0.40s"><circle cx="293.4" cy="188.3" r="1.9"/><path d="M288.4,188.3 L298.4,188.3 M293.4,183.3 L293.4,193.3"/></g>
+    <g class="starbig" style="animation-duration:5s;animation-delay:-2.11s"><circle cx="264.4" cy="110.1" r="1.9"/><path d="M259.4,110.1 L269.4,110.1 M264.4,105.1 L264.4,115.1"/></g>
+    </g>
+  </g>
+
+  <!-- clouds only in daylight -->
+  <g class="day-only">
+    <g class="scroll-cloud">
+      <g><g class="cloud" transform="translate(90,78) scale(1.0)" opacity="0.95"><ellipse cx="0" cy="0" rx="34" ry="17"/><ellipse cx="-24" cy="6" rx="22" ry="12"/><ellipse cx="26" cy="5" rx="24" ry="13"/><ellipse cx="6" cy="-11" rx="20" ry="13"/></g><g class="cloud" transform="translate(330,128) scale(0.72)" opacity="0.8"><ellipse cx="0" cy="0" rx="34" ry="17"/><ellipse cx="-24" cy="6" rx="22" ry="12"/><ellipse cx="26" cy="5" rx="24" ry="13"/><ellipse cx="6" cy="-11" rx="20" ry="13"/></g><g class="cloud" transform="translate(520,62) scale(0.86)" opacity="0.9"><ellipse cx="0" cy="0" rx="34" ry="17"/><ellipse cx="-24" cy="6" rx="22" ry="12"/><ellipse cx="26" cy="5" rx="24" ry="13"/><ellipse cx="6" cy="-11" rx="20" ry="13"/></g><g class="cloud" transform="translate(215,168) scale(0.5)" opacity="0.6"><ellipse cx="0" cy="0" rx="34" ry="17"/><ellipse cx="-24" cy="6" rx="22" ry="12"/><ellipse cx="26" cy="5" rx="24" ry="13"/><ellipse cx="6" cy="-11" rx="20" ry="13"/></g></g>
+      <g transform="translate(600,0)"><g class="cloud" transform="translate(90,78) scale(1.0)" opacity="0.95"><ellipse cx="0" cy="0" rx="34" ry="17"/><ellipse cx="-24" cy="6" rx="22" ry="12"/><ellipse cx="26" cy="5" rx="24" ry="13"/><ellipse cx="6" cy="-11" rx="20" ry="13"/></g><g class="cloud" transform="translate(330,128) scale(0.72)" opacity="0.8"><ellipse cx="0" cy="0" rx="34" ry="17"/><ellipse cx="-24" cy="6" rx="22" ry="12"/><ellipse cx="26" cy="5" rx="24" ry="13"/><ellipse cx="6" cy="-11" rx="20" ry="13"/></g><g class="cloud" transform="translate(520,62) scale(0.86)" opacity="0.9"><ellipse cx="0" cy="0" rx="34" ry="17"/><ellipse cx="-24" cy="6" rx="22" ry="12"/><ellipse cx="26" cy="5" rx="24" ry="13"/><ellipse cx="6" cy="-11" rx="20" ry="13"/></g><g class="cloud" transform="translate(215,168) scale(0.5)" opacity="0.6"><ellipse cx="0" cy="0" rx="34" ry="17"/><ellipse cx="-24" cy="6" rx="22" ry="12"/><ellipse cx="26" cy="5" rx="24" ry="13"/><ellipse cx="6" cy="-11" rx="20" ry="13"/></g></g>
+    </g>
+  </g>
+
+  <!-- ================= sea ================= -->
+  <rect x="0" y="250" width="600" height="140" fill="url(#seaGrad)"/>
+  <g clip-path="url(#seaclip)">
+    <!-- sun/moon glitter column -->
+    <g>
+      <ellipse class="glitter" cx="470" cy="256" rx="8" ry="1.4" opacity="0.40"/>
+      <ellipse class="glitter glitter2" cx="469" cy="269" rx="15" ry="1.7" opacity="0.37"/>
+      <ellipse class="glitter" cx="468" cy="282" rx="22" ry="2.0" opacity="0.34"/>
+      <ellipse class="glitter glitter2" cx="467" cy="295" rx="29" ry="2.3" opacity="0.32"/>
+      <ellipse class="glitter" cx="466" cy="308" rx="36" ry="2.6" opacity="0.29"/>
+      <ellipse class="glitter glitter2" cx="465" cy="321" rx="43" ry="2.9" opacity="0.26"/>
+      <ellipse class="glitter" cx="464" cy="334" rx="50" ry="3.2" opacity="0.23"/>
+      <ellipse class="glitter glitter2" cx="463" cy="347" rx="57" ry="3.5" opacity="0.20"/>
+      <ellipse class="glitter" cx="462" cy="360" rx="64" ry="3.8" opacity="0.18"/>
+    </g>
+    <g class="waves scroll-sea">
+      <g><path d="M0,272 q12,-5 24,0 t24,0" opacity="0.55"/><path d="M50,272 q12,-5 24,0 t24,0" opacity="0.55"/><path d="M100,272 q12,-5 24,0 t24,0" opacity="0.55"/><path d="M150,272 q12,-5 24,0 t24,0" opacity="0.55"/><path d="M0,308 q12,-5 24,0 t24,0" opacity="0.45"/><path d="M50,308 q12,-5 24,0 t24,0" opacity="0.45"/><path d="M100,308 q12,-5 24,0 t24,0" opacity="0.45"/><path d="M150,308 q12,-5 24,0 t24,0" opacity="0.45"/><path d="M0,346 q12,-5 24,0 t24,0" opacity="0.38"/><path d="M50,346 q12,-5 24,0 t24,0" opacity="0.38"/><path d="M100,346 q12,-5 24,0 t24,0" opacity="0.38"/><path d="M150,346 q12,-5 24,0 t24,0" opacity="0.38"/></g>
+      <g transform="translate(200,0)"><path d="M0,272 q12,-5 24,0 t24,0" opacity="0.55"/><path d="M50,272 q12,-5 24,0 t24,0" opacity="0.55"/><path d="M100,272 q12,-5 24,0 t24,0" opacity="0.55"/><path d="M150,272 q12,-5 24,0 t24,0" opacity="0.55"/><path d="M0,308 q12,-5 24,0 t24,0" opacity="0.45"/><path d="M50,308 q12,-5 24,0 t24,0" opacity="0.45"/><path d="M100,308 q12,-5 24,0 t24,0" opacity="0.45"/><path d="M150,308 q12,-5 24,0 t24,0" opacity="0.45"/><path d="M0,346 q12,-5 24,0 t24,0" opacity="0.38"/><path d="M50,346 q12,-5 24,0 t24,0" opacity="0.38"/><path d="M100,346 q12,-5 24,0 t24,0" opacity="0.38"/><path d="M150,346 q12,-5 24,0 t24,0" opacity="0.38"/></g>
+      <g transform="translate(400,0)"><path d="M0,272 q12,-5 24,0 t24,0" opacity="0.55"/><path d="M50,272 q12,-5 24,0 t24,0" opacity="0.55"/><path d="M100,272 q12,-5 24,0 t24,0" opacity="0.55"/><path d="M150,272 q12,-5 24,0 t24,0" opacity="0.55"/><path d="M0,308 q12,-5 24,0 t24,0" opacity="0.45"/><path d="M50,308 q12,-5 24,0 t24,0" opacity="0.45"/><path d="M100,308 q12,-5 24,0 t24,0" opacity="0.45"/><path d="M150,308 q12,-5 24,0 t24,0" opacity="0.45"/><path d="M0,346 q12,-5 24,0 t24,0" opacity="0.38"/><path d="M50,346 q12,-5 24,0 t24,0" opacity="0.38"/><path d="M100,346 q12,-5 24,0 t24,0" opacity="0.38"/><path d="M150,346 q12,-5 24,0 t24,0" opacity="0.38"/></g>
+      <g transform="translate(600,0)"><path d="M0,272 q12,-5 24,0 t24,0" opacity="0.55"/><path d="M50,272 q12,-5 24,0 t24,0" opacity="0.55"/><path d="M100,272 q12,-5 24,0 t24,0" opacity="0.55"/><path d="M150,272 q12,-5 24,0 t24,0" opacity="0.55"/><path d="M0,308 q12,-5 24,0 t24,0" opacity="0.45"/><path d="M50,308 q12,-5 24,0 t24,0" opacity="0.45"/><path d="M100,308 q12,-5 24,0 t24,0" opacity="0.45"/><path d="M150,308 q12,-5 24,0 t24,0" opacity="0.45"/><path d="M0,346 q12,-5 24,0 t24,0" opacity="0.38"/><path d="M50,346 q12,-5 24,0 t24,0" opacity="0.38"/><path d="M100,346 q12,-5 24,0 t24,0" opacity="0.38"/><path d="M150,346 q12,-5 24,0 t24,0" opacity="0.38"/></g>
+    </g>
+    <g class="scroll-sea" opacity=".9">
+      <g><g transform="translate(120,280) scale(0.7)"><path class="sail" d="M0,-22 L0,-2 L-15,-2 Z"/><path class="sail2" d="M2,-20 L14,-2 L2,-2 Z"/><path class="hull" d="M-18,-1 L18,-1 L12,7 L-12,7 Z"/></g></g>
+      <g transform="translate(200,0)"><g transform="translate(150,280) scale(0.55)"><path class="sail" d="M0,-22 L0,-2 L-15,-2 Z"/><path class="sail2" d="M2,-20 L14,-2 L2,-2 Z"/><path class="hull" d="M-18,-1 L18,-1 L12,7 L-12,7 Z"/></g></g>
+      <g transform="translate(400,0)"><g transform="translate(60,280) scale(0.62)"><path class="sail" d="M0,-22 L0,-2 L-15,-2 Z"/><path class="sail2" d="M2,-20 L14,-2 L2,-2 Z"/><path class="hull" d="M-18,-1 L18,-1 L12,7 L-12,7 Z"/></g></g>
+      <g transform="translate(600,0)"><g transform="translate(120,280) scale(0.7)"><path class="sail" d="M0,-22 L0,-2 L-15,-2 Z"/><path class="sail2" d="M2,-20 L14,-2 L2,-2 Z"/><path class="hull" d="M-18,-1 L18,-1 L12,7 L-12,7 Z"/></g></g>
+    </g>
+  </g>
+
+  <!-- ================= shore and road ================= -->
+  <rect class="kerb" x="0" y="390" width="600" height="40"/>
+  <g class="scroll-sea">
+    <path class="foamline" d="M-200,390 q14,6 28,0 t28,0" /><path class="foamline" d="M-144,390 q14,6 28,0 t28,0" /><path class="foamline" d="M-88,390 q14,6 28,0 t28,0" /><path class="foamline" d="M-32,390 q14,6 28,0 t28,0" /><path class="foamline" d="M24,390 q14,6 28,0 t28,0" /><path class="foamline" d="M80,390 q14,6 28,0 t28,0" /><path class="foamline" d="M136,390 q14,6 28,0 t28,0" /><path class="foamline" d="M192,390 q14,6 28,0 t28,0" /><path class="foamline" d="M248,390 q14,6 28,0 t28,0" /><path class="foamline" d="M304,390 q14,6 28,0 t28,0" /><path class="foamline" d="M360,390 q14,6 28,0 t28,0" /><path class="foamline" d="M416,390 q14,6 28,0 t28,0" /><path class="foamline" d="M472,390 q14,6 28,0 t28,0" /><path class="foamline" d="M528,390 q14,6 28,0 t28,0" /><path class="foamline" d="M584,390 q14,6 28,0 t28,0" /><path class="foamline" d="M640,390 q14,6 28,0 t28,0" /><path class="foamline" d="M696,390 q14,6 28,0 t28,0" /><path class="foamline" d="M752,390 q14,6 28,0 t28,0" />
+  </g>
+  <rect x="0" y="390" width="600" height="7" fill="var(--foam)" opacity=".25"/>
+  <rect class="road" x="0" y="430" width="600" height="115"/>
+
+  <!-- centre line, fastest of the far layers -->
+  <g class="scroll-road">
+    <rect class="line" x="-80" y="482" width="44" height="5" rx="2.5"/><rect class="line" x="0" y="482" width="44" height="5" rx="2.5"/><rect class="line" x="80" y="482" width="44" height="5" rx="2.5"/><rect class="line" x="160" y="482" width="44" height="5" rx="2.5"/><rect class="line" x="240" y="482" width="44" height="5" rx="2.5"/><rect class="line" x="320" y="482" width="44" height="5" rx="2.5"/><rect class="line" x="400" y="482" width="44" height="5" rx="2.5"/><rect class="line" x="480" y="482" width="44" height="5" rx="2.5"/><rect class="line" x="560" y="482" width="44" height="5" rx="2.5"/><rect class="line" x="640" y="482" width="44" height="5" rx="2.5"/><rect class="line" x="720" y="482" width="44" height="5" rx="2.5"/>
+  </g>
+
+  <!-- the bump: same speed as the road, timed to the jolts -->
+  <g class="scroll-bump">
+    <path class="bump" d="M1124,522 q58,-32 116,0 z"/>
+    <path class="bumptop" d="M1142,507 q40,-14 80,0"/>
+    <ellipse class="rock" cx="1260" cy="517" rx="8" ry="4.5" opacity=".75"/>
+    <ellipse class="rock" cx="1096" cy="518" rx="5" ry="3" opacity=".6"/>
+  </g>
+
+  <!-- ================= rider ================= -->
+  <ellipse cx="306" cy="527" rx="96" ry="7" fill="var(--shadow)" opacity=".55"/>
+  <g class="rig">
+   <g class="bob">
+    <g class="wheel">
+      <circle class="tyre" cx="240" cy="486" r="34"/>
+      <g class="spin" style="transform-origin:240px 486px">
+        <path class="spoke" d="M267.0,486.0 L213.0,486.0 M264.9,496.3 L215.1,475.7 M259.1,505.1 L220.9,466.9 M250.3,510.9 L229.7,461.1 M240.0,513.0 L240.0,459.0 M229.7,510.9 L250.3,461.1 M220.9,505.1 L259.1,466.9 M215.1,496.3 L264.9,475.7"/>
+        <circle class="hub" cx="240" cy="486" r="4.5"/>
+      </g>
+    </g>
+    <g class="wheel">
+      <circle class="tyre" cx="372" cy="486" r="34"/>
+      <g class="spin" style="transform-origin:372px 486px">
+        <path class="spoke" d="M399.0,486.0 L345.0,486.0 M396.9,496.3 L347.1,475.7 M391.1,505.1 L352.9,466.9 M382.3,510.9 L361.7,461.1 M372.0,513.0 L372.0,459.0 M361.7,510.9 L382.3,461.1 M352.9,505.1 L391.1,466.9 M347.1,496.3 L396.9,475.7"/>
+        <circle class="hub" cx="372" cy="486" r="4.5"/>
+      </g>
+    </g>
+
+    <!-- frame -->
+    <path class="frame" d="M296,486 L278,424 M296,486 L352,432 M278,424 L352,432
+                           M296,486 L240,486 M278,424 L240,486 M352,432 L372,486"/>
+    <path class="frame2" d="M352,432 L356,416 M356,416 L374,412"/>
+    <rect class="rack" x="176" y="444" width="96" height="6" rx="3"/>
+    <path class="frame2" d="M240,486 L212,450 M240,486 L262,450 M268,448 L280,430"/>
+    <path class="pel-sh" d="M268,424 q12,-6 22,2 q-10,6 -22,-2 z"/>
+
+    <!-- crank and pedals -->
+    <g class="crank">
+      <circle cx="300" cy="486" r="11" fill="#b9bcc0"/>
+      <rect x="296" y="470" width="8" height="32" rx="4" fill="#8c959e"/>
+    </g>
+
+    <!-- robot on the rear rack -->
+    <g class="robot">
+      <path class="antenna" d="M214,360 L214,344"/>
+      <circle class="antenna-tip" cx="214" cy="341" r="4"/>
+      <rect class="bot-d" x="184" y="412" width="13" height="24" rx="6.5"/>
+      <rect class="bot-d" x="231" y="412" width="13" height="24" rx="6.5"/>
+      <rect class="bot" x="192" y="406" width="44" height="34" rx="12"/>
+      <rect class="panel" x="203" y="416" width="22" height="14" rx="3.5"/>
+      <rect class="sq1" x="206" y="419" width="6" height="7" rx="1.5"/>
+      <rect class="sq2" x="216" y="419" width="6" height="7" rx="1.5"/>
+      <rect class="bot-d" x="199" y="438" width="11" height="17" rx="5.5"/>
+      <rect class="bot-d" x="218" y="438" width="11" height="17" rx="5.5"/>
+      <rect class="bot" x="181" y="360" width="66" height="46" rx="20"/>
+      <circle class="blush" cx="191" cy="391" r="6.5"/>
+      <circle class="blush" cx="237" cy="391" r="6.5"/>
+      <g class="calm">
+        <path class="ink" d="M193,382 q8,-10 16,0"/>
+        <path class="ink" d="M219,382 q8,-10 16,0"/>
+      </g>
+      <g class="startled">
+        <circle class="pupil" cx="201" cy="380" r="10"/>
+        <circle class="pupil" cx="227" cy="380" r="10"/>
+        <circle class="eyewhite" cx="197.5" cy="376.5" r="3.6"/>
+        <circle class="eyewhite" cx="223.5" cy="376.5" r="3.6"/>
+      </g>
+    </g>
+
+    <!-- pelican -->
+    <g class="pelican">
+      <path class="pel" d="M268,398 q-18,-2 -26,-12 q16,-4 28,3 z"/>
+      <ellipse class="pel" cx="304" cy="398" rx="44" ry="30"/>
+      <path class="pel-sh" d="M272,408 q32,18 66,0 q-30,22 -66,0 z" opacity=".55"/>
+      <path class="pel" d="M316,376 q20,-30 40,-46" stroke="#f7f6f1" stroke-width="26"
+            stroke-linecap="round" fill="none"/>
+      <circle class="pel" cx="362" cy="322" r="24"/>
+      <!-- bill, pouch under it -->
+      <path class="pouch" d="M374,332 q30,28 62,4 q-10,18 -34,16 q-20,-2 -28,-20 z"/>
+      <path class="bill" d="M378,312 L444,332 L376,338 z"/>
+      <path class="bill" d="M438,330 q10,2 10,4 q-5,3 -11,0 z"/>
+      <!-- wing resting on the bar -->
+      <path class="pel" d="M300,388 q30,6 54,24 q-26,6 -46,-4 q-12,-8 -8,-20 z"/>
+      <path class="pel-sh" d="M312,396 q22,6 38,17" stroke="#e2e0d6" stroke-width="3"
+            stroke-linecap="round" fill="none" opacity=".75"/>
+      <!-- sailor cap -->
+      <g transform="rotate(-7 362 308)">
+        <path class="capband" d="M334,306 q28,-30 58,-4 q-29,-12 -58,4 z"/>
+        <rect class="cap" x="332" y="302" width="62" height="9" rx="4.5"/>
+        <path class="cap" d="M392,304 q13,4 12,12 q-10,-1 -16,-7 z"/>
+        <circle class="capband" cx="336" cy="300" r="3.2"/>
+      </g>
+      <!-- friendly face -->
+      <g class="calm">
+        <path class="ink" d="M356,318 q8,-10 16,0"/>
+        <path class="ink" d="M352,336 q10,7 20,1" stroke-width="2.6" opacity=".55"/>
+      </g>
+      <g class="startled">
+        <circle class="eyewhite" cx="364" cy="318" r="10"/>
+        <circle class="pupil" cx="365" cy="318" r="5.6"/>
+        <circle class="eyewhite" cx="362" cy="315" r="2.6"/>
+      </g>
+    </g>
+
+    <!-- legs reaching the pedals, drawn over the crank -->
+    <g class="legbob">
+      <path class="leg" d="M306,420 q6,34 -2,58"/>
+      <path class="leg" d="M294,422 q-4,32 6,56"/>
+      <ellipse class="bill" cx="302" cy="480" rx="11" ry="5"/>
+      <ellipse class="bill" cx="300" cy="480" rx="11" ry="5"/>
+    </g>
+   </g>
+  </g>
+
+  <!-- ================= foreground verge ================= -->
+  <rect class="verge" x="0" y="545" width="600" height="55"/>
+  <g class="scroll-verge">
+    <g transform="translate(-240,0)">
+      <path class="tuft" d="M20,545 q6,-16 12,0 z" opacity=".85"/>
+      <path class="tuft" d="M64,545 q8,-22 16,0 z" opacity=".7"/>
+      <ellipse class="rock" cx="120" cy="555" rx="10" ry="5"/>
+      <path class="tuft" d="M170,545 q7,-18 14,0 z" opacity=".8"/>
+      <ellipse class="rock" cx="205" cy="567" rx="7" ry="4" opacity=".8"/>
+    </g><g transform="translate(0,0)">
+      <path class="tuft" d="M20,545 q6,-16 12,0 z" opacity=".85"/>
+      <path class="tuft" d="M64,545 q8,-22 16,0 z" opacity=".7"/>
+      <ellipse class="rock" cx="120" cy="555" rx="10" ry="5"/>
+      <path class="tuft" d="M170,545 q7,-18 14,0 z" opacity=".8"/>
+      <ellipse class="rock" cx="205" cy="567" rx="7" ry="4" opacity=".8"/>
+    </g><g transform="translate(240,0)">
+      <path class="tuft" d="M20,545 q6,-16 12,0 z" opacity=".85"/>
+      <path class="tuft" d="M64,545 q8,-22 16,0 z" opacity=".7"/>
+      <ellipse class="rock" cx="120" cy="555" rx="10" ry="5"/>
+      <path class="tuft" d="M170,545 q7,-18 14,0 z" opacity=".8"/>
+      <ellipse class="rock" cx="205" cy="567" rx="7" ry="4" opacity=".8"/>
+    </g><g transform="translate(480,0)">
+      <path class="tuft" d="M20,545 q6,-16 12,0 z" opacity=".85"/>
+      <path class="tuft" d="M64,545 q8,-22 16,0 z" opacity=".7"/>
+      <ellipse class="rock" cx="120" cy="555" rx="10" ry="5"/>
+      <path class="tuft" d="M170,545 q7,-18 14,0 z" opacity=".8"/>
+      <ellipse class="rock" cx="205" cy="567" rx="7" ry="4" opacity=".8"/>
+    </g><g transform="translate(720,0)">
+      <path class="tuft" d="M20,545 q6,-16 12,0 z" opacity=".85"/>
+      <path class="tuft" d="M64,545 q8,-22 16,0 z" opacity=".7"/>
+      <ellipse class="rock" cx="120" cy="555" rx="10" ry="5"/>
+      <path class="tuft" d="M170,545 q7,-18 14,0 z" opacity=".8"/>
+      <ellipse class="rock" cx="205" cy="567" rx="7" ry="4" opacity=".8"/>
+    </g>
+  </g>
+
+</g>
+</svg>
+
+  </div>
+  <div class="btns">
+    <button id="bLight">Light</button>
+    <button id="bDark">Dark</button>
+    <button id="bSys" class="on">System</button>
+  </div>
+  <p>The sky is transparent, so the page background shows through the rounded
+     corners. Sun and clouds by day, moon and stars at night.</p>
+</div>
+<script>
+  var svg = document.querySelector(".stage svg");
+  var btns = { bLight:["force-light","day"], bDark:["force-dark","night"], bSys:["",""] };
+  Object.keys(btns).forEach(function (id) {
+    document.getElementById(id).onclick = function () {
+      document.body.className = btns[id][0];
+      svg.setAttribute("class", btns[id][1]);
+      Object.keys(btns).forEach(function (o) {
+        document.getElementById(o).classList.toggle("on", o === id); });
+    };
+  });
+</script>
+</body></html>
