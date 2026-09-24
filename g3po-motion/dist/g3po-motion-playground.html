@@ -1,0 +1,3139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<title>g3po motion playground</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1C1D1F; --ink-2: #26282B; --ink-3: #34373B; --line: #3C3F44;
+    --yellow: #FFC400; --white: #F7F3EA; --mute: #A8ABB0;
+    --font: 'Archivo', 'Arial Black', 'Helvetica Neue', Arial, sans-serif;
+    --mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+  :root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+  body { margin: 0; background: var(--ink); color: var(--white); font-family: var(--font); font-size: 15px;
+         line-height: 1.45; -webkit-font-smoothing: antialiased; }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  :focus-visible { outline: 3px solid var(--yellow); outline-offset: 2px; }
+
+  header { display: flex; align-items: center; gap: 14px; padding: 16px 24px; border-bottom: 1px solid var(--line); }
+  header .mark { width: 44px; height: 32px; flex: none; }
+  header h1 { margin: 0; font-size: 22px; font-weight: 900; font-stretch: 88%; letter-spacing: -.01em; }
+  header p { margin: 0 0 0 auto; color: var(--mute); font-size: 13px; }
+
+  .shell { display: grid; grid-template-columns: 250px minmax(0, 1fr); min-height: calc(100vh - 65px); }
+  .rail { border-right: 1px solid var(--line); padding: 18px 14px 40px; overflow-y: auto; max-height: calc(100vh - 65px);
+          position: sticky; top: 0; }
+  .rail h3 { margin: 18px 10px 8px; font-size: 13px; font-weight: 700; color: var(--mute); }
+  .rail .group:first-child h3 { margin-top: 2px; }
+  .rail .items { display: flex; flex-direction: column; gap: 2px; }
+  .rail button { text-align: left; border: 0; background: transparent; padding: 8px 12px; border-radius: 20px;
+                 cursor: pointer; font-weight: 600; font-size: 15px; }
+  .rail button:hover { background: var(--ink-2); }
+  .rail button.on { background: var(--yellow); color: var(--ink); font-weight: 800; }
+
+  main { padding: 22px 28px 60px; min-width: 0; }
+  .head { display: flex; align-items: baseline; gap: 18px; flex-wrap: wrap; margin-bottom: 14px; }
+  .head h2 { margin: 0; font-size: 40px; line-height: 1; font-weight: 900; font-stretch: 72%; letter-spacing: -.015em; }
+  .head p { margin: 0; color: var(--mute); max-width: 62ch; }
+
+  .stagewrap { border-radius: 18px; overflow: hidden; background: #000; }
+  #stage { position: relative; width: 100%; }
+
+  .transport { display: flex; align-items: center; gap: 8px; margin: 14px 0 22px; flex-wrap: wrap; }
+  .transport button, .panel button { border: 1px solid var(--line); background: var(--ink-2); padding: 9px 16px;
+    border-radius: 22px; cursor: pointer; font-weight: 700; }
+  .transport button:hover, .panel button:hover { border-color: var(--mute); }
+  #play { background: var(--yellow); color: var(--ink); border-color: var(--yellow); min-width: 86px; }
+  .transport .step { padding: 9px 12px; min-width: 42px; }
+  #scrub { flex: 1 1 200px; accent-color: var(--yellow); min-width: 140px; }
+  #time { font-variant-numeric: tabular-nums; color: var(--mute); min-width: 120px; text-align: right; font-size: 14px; }
+  .transport select { background: var(--ink-2); border: 1px solid var(--line); border-radius: 22px; padding: 8px 12px; }
+  .transport label { display: flex; align-items: center; gap: 6px; color: var(--mute); font-size: 14px; }
+
+  .panels { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 20px; }
+  .panel { background: var(--ink-2); border-radius: 16px; padding: 18px 20px 20px; min-width: 0; }
+  .panel h4 { margin: 0 0 12px; font-size: 17px; font-weight: 800; }
+  .panel .row { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+  #runCode { background: var(--yellow); color: var(--ink); border-color: var(--yellow); }
+
+  .field { display: grid; gap: 6px; margin-bottom: 14px; }
+  .field > span { font-size: 13px; color: var(--mute); font-weight: 600; }
+  .field input[type=text], .field input[type=number], .field select, .field textarea {
+    width: 100%; background: var(--ink); border: 1px solid var(--line); border-radius: 10px; padding: 9px 12px; }
+  .field textarea { resize: vertical; min-height: 64px; }
+  .field.check { grid-template-columns: auto 1fr; align-items: center; }
+  .field.check input { width: 18px; height: 18px; accent-color: var(--yellow); }
+  .field .media { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .field .media input { font-size: 13px; max-width: 100%; }
+  .field .hint { font-size: 12px; color: var(--mute); }
+  .ghost { border: 1px solid var(--line); background: transparent; border-radius: 20px; padding: 7px 12px; cursor: pointer; font-size: 13px; font-weight: 700; }
+
+  #code { width: 100%; min-height: 300px; background: var(--ink); color: #E9E4D6; border: 1px solid var(--line);
+          border-radius: 12px; padding: 14px 16px; font-family: var(--mono); font-size: 13px; line-height: 1.55;
+          resize: vertical; white-space: pre; overflow: auto; tab-size: 2; }
+  #error { margin-top: 12px; background: #3A1E1A; color: #FFC9BF; border-radius: 10px; padding: 10px 14px; font-size: 14px; }
+
+  @media (max-width: 980px) {
+    .shell { grid-template-columns: 1fr; }
+    .rail { position: static; max-height: none; border-right: 0; border-bottom: 1px solid var(--line);
+            display: flex; gap: 14px; overflow-x: auto; padding: 12px 14px; }
+    .rail .group { flex: none; }
+    .rail h3 { margin: 0 6px 6px; }
+    .rail .items { flex-direction: row; }
+    .rail button { white-space: nowrap; }
+    main { padding: 16px 14px 48px; }
+    .head h2 { font-size: 32px; }
+    .panels { grid-template-columns: 1fr; }
+    header p { display: none; }
+  }
+
+  /* render mode: only the stage, at native size, for frame export */
+  body.render { background: #000; }
+  body.render header, body.render .rail, body.render .head, body.render .transport,
+  body.render .panels { display: none; }
+  body.render .shell { display: block; min-height: 0; }
+  body.render main { padding: 0; }
+  body.render .stagewrap { width: 1920px; border-radius: 0; }
+</style>
+</head>
+<body>
+<header>
+  <svg class="mark" viewBox="0 0 88 64" aria-hidden="true">
+    <rect x="3" y="3" width="82" height="58" rx="27" fill="#FFC400" stroke="#F7F3EA" stroke-width="0"/>
+    <circle cx="30" cy="31" r="10" fill="#1C1D1F"/><circle cx="58" cy="31" r="10" fill="#1C1D1F"/>
+    <circle cx="27" cy="28" r="3.4" fill="#fff"/><circle cx="55" cy="28" r="3.4" fill="#fff"/>
+  </svg>
+  <h1>g3po motion playground</h1>
+  <p>Space plays, arrows step one frame, R replays</p>
+</header>
+<div class="shell">
+  <nav class="rail" id="rail" aria-label="Effects"></nav>
+  <main>
+    <div class="head"><h2 id="title"></h2><p id="note"></p></div>
+    <div class="stagewrap"><div id="stage"></div></div>
+    <div class="transport" role="group" aria-label="Playback">
+      <button id="play" type="button">Play</button>
+      <button id="replay" type="button">Replay</button>
+      <button id="back" class="step" type="button" aria-label="Back one frame">&#8249;</button>
+      <button id="fwd" class="step" type="button" aria-label="Forward one frame">&#8250;</button>
+      <input id="scrub" type="range" min="0" max="1000" value="0" aria-label="Scrub">
+      <span id="time">0.00 s</span>
+      <select id="speed" aria-label="Speed">
+        <option value="0.25">0.25×</option><option value="0.5">0.5×</option><option value="1" selected>1×</option>
+      </select>
+      <label><input id="loop" type="checkbox"> Loop</label>
+    </div>
+    <div class="panels">
+      <section class="panel">
+        <h4>Settings</h4>
+        <form id="form" onsubmit="return false"></form>
+      </section>
+      <section class="panel">
+        <h4>Script</h4>
+        <textarea id="code" spellcheck="false" aria-label="G3Video script"></textarea>
+        <div class="row">
+          <button id="runCode" type="button">Run script</button>
+          <button id="resetCode" type="button">Reset to settings</button>
+          <button id="copy" type="button">Copy</button>
+        </div>
+        <div id="error" hidden></div>
+      </section>
+    </div>
+  </main>
+</div>
+
+<!-- the toolkit -->
+<script>/* motion/core.js */
+/* g3po motion — core
+ *
+ * Every animation in this toolkit is a pure function of time. Nothing relies on
+ * wall-clock CSS animations: a Timeline renders the exact state for any t, so a
+ * frame can be reproduced by seeking. That is what makes export deterministic
+ * and the playground scrubber frame-accurate.
+ */
+(function (G3M) {
+  "use strict";
+
+  // ------------------------------------------------------------------ palette
+  G3M.C = {
+    yellow: "#FFC400", yellowDeep: "#E6AA00", ink: "#1C1D1F", white: "#F7F3EA",
+    cheek: "#F2994A", red: "#E0452B", grey: "#C9CCD0", steel: "#8C959E",
+    blue: "#2F6FB5", green: "#3FA66B", paper: "#FFFDF7"
+  };
+  G3M.FONT = "'Archivo', 'Archivo Black', 'Arial Black', 'Helvetica Neue', Arial, 'DejaVu Sans', sans-serif";
+
+  // Accept palette names or raw colours anywhere a colour is configured.
+  G3M.color = function (c) { return (c && G3M.C[c]) || c || G3M.C.yellow; };
+
+  // ------------------------------------------------------------------ maths
+  const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const prog = (t, start, dur) => dur <= 0 ? (t >= start ? 1 : 0) : clamp((t - start) / dur);
+  G3M.clamp = clamp; G3M.lerp = lerp; G3M.prog = prog;
+
+  // ------------------------------------------------------------------ easing
+  const E = {
+    linear: t => t,
+    inQuad: t => t * t,
+    outQuad: t => 1 - (1 - t) * (1 - t),
+    inOutQuad: t => t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2,
+    inCubic: t => t * t * t,
+    outCubic: t => 1 - Math.pow(1 - t, 3),
+    inOutCubic: t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2,
+    outQuint: t => 1 - Math.pow(1 - t, 5),
+    inExpo: t => t === 0 ? 0 : Math.pow(2, 10 * t - 10),
+    outExpo: t => t === 1 ? 1 : 1 - Math.pow(2, -10 * t),
+    inOutExpo: t => t === 0 ? 0 : t === 1 ? 1 : t < .5 ? Math.pow(2, 20 * t - 10) / 2 : (2 - Math.pow(2, -20 * t + 10)) / 2,
+    outBack: (s = 1.70158) => t => 1 + (s + 1) * Math.pow(t - 1, 3) + s * Math.pow(t - 1, 2),
+    inBack: (s = 1.70158) => t => (s + 1) * t * t * t - s * t * t,
+    // damped oscillation that settles exactly on 1
+    spring: (bounces = 2.2, damping = 5.5) => t =>
+      t >= 1 ? 1 : 1 - Math.exp(-damping * t) * Math.cos(bounces * Math.PI * t) * (1 - t * 0.02)
+  };
+  // Named presets: the house personality.
+  E.pop = E.outBack(2.4);          // ~12% overshoot
+  E.snap = E.outQuint;
+  E.whip = E.inOutExpo;
+  E.bouncy = E.spring(2.4, 5);
+  E.settle = E.spring(1.6, 6.5);
+  G3M.ease = E;
+  G3M.easing = function (name) {
+    if (typeof name === "function") return name;
+    if (!name) return E.snap;
+    const e = E[name];
+    if (typeof e === "function" && e.length === 0 && (name === "outBack" || name === "inBack" || name === "spring"))
+      return e();
+    return e || E.snap;
+  };
+
+  /* Keyframes: kf(t, [[time, value, ease], ...]). The ease on a frame shapes the
+   * segment arriving at it. Values can be numbers or arrays of numbers. Easing
+   * curves are allowed to overshoot (outBack, spring) and values extrapolate. */
+  function mix(a, b, t) {
+    if (Array.isArray(a)) return a.map((v, i) => lerp(v, b[i], t));
+    return lerp(a, b, t);
+  }
+  G3M.kf = function (t, frames) {
+    if (t <= frames[0][0]) return frames[0][1];
+    for (let i = 1; i < frames.length; i++) {
+      const f = frames[i];
+      if (t <= f[0]) {
+        const a = frames[i - 1];
+        const p = (t - a[0]) / ((f[0] - a[0]) || 1);
+        return mix(a[1], f[1], (f[2] || E.linear)(clamp(p)));
+      }
+    }
+    return frames[frames.length - 1][1];
+  };
+
+  // Seeded randomness so jitter (typing speed, confetti, shake) is repeatable.
+  G3M.rng = function (seed = 1) {
+    let a = seed >>> 0;
+    return function () {
+      a |= 0; a = a + 0x6D2B79F5 | 0;
+      let t = Math.imul(a ^ a >>> 15, 1 | a);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  };
+
+  // Decaying shake, deterministic for a given seed.
+  G3M.shake = function (t, t0, dur, amp, seed = 7) {
+    const p = (t - t0) / dur;
+    if (p < 0 || p > 1) return [0, 0];
+    const d = Math.pow(1 - p, 2) * amp;
+    const k = Math.floor((t - t0) / 16);
+    const r = G3M.rng(seed * 997 + k);
+    return [(r() * 2 - 1) * d, (r() * 2 - 1) * d];
+  };
+
+  // Quadratic bezier with a bend, for curved motion paths.
+  G3M.curve = function (a, b, t, bend = 0.18) {
+    const mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2;
+    const dx = b[0] - a[0], dy = b[1] - a[1];
+    const cx = mx - dy * bend, cy = my + dx * bend;
+    const u = 1 - t;
+    return [u * u * a[0] + 2 * u * t * cx + t * t * b[0],
+            u * u * a[1] + 2 * u * t * cy + t * t * b[1]];
+  };
+
+  // ------------------------------------------------------------------ DOM
+  const SVGNS = "http://www.w3.org/2000/svg";
+  G3M.h = function (tag, props, parent) {
+    const el = document.createElement(tag);
+    if (props) for (const k in props) {
+      if (k === "style" && typeof props[k] === "object") Object.assign(el.style, props[k]);
+      else if (k === "text") el.textContent = props[k];
+      else if (k === "html") el.innerHTML = props[k];
+      else el.setAttribute(k, props[k]);
+    }
+    if (parent) parent.appendChild(el);
+    return el;
+  };
+  G3M.s = function (tag, attrs, parent) {
+    const el = document.createElementNS(SVGNS, tag);
+    if (attrs) for (const k in attrs) {
+      if (k === "text") el.textContent = attrs[k]; else el.setAttribute(k, attrs[k]);
+    }
+    if (parent) parent.appendChild(el);
+    return el;
+  };
+  G3M.set = function (el, attrs) { for (const k in attrs) el.setAttribute(k, attrs[k]); return el; };
+  G3M.css = function (el, style) { Object.assign(el.style, style); return el; };
+
+  /* Text width at a given size, measured in an off-screen probe. Scenes are
+   * built while hidden (display: none), where layout reports zero, so any
+   * measuring has to happen outside them. */
+  let probe = null;
+  G3M.measureText = function (text, style = {}) {
+    if (!probe) {
+      probe = document.createElement("span");
+      Object.assign(probe.style, { position: "absolute", left: "-99999px", top: "0", visibility: "hidden",
+        whiteSpace: "pre", pointerEvents: "none" });
+      document.body.appendChild(probe);
+    }
+    Object.assign(probe.style, { fontFamily: G3M.FONT, fontWeight: 900, fontStretch: "100%", fontSize: "100px",
+      letterSpacing: "0", textTransform: "none" }, style);
+    probe.textContent = text;
+    return probe.getBoundingClientRect().width;
+  };
+
+  // Full-frame layer helpers
+  G3M.fill = { position: "absolute", left: "0", top: "0", width: "100%", height: "100%" };
+  G3M.svgLayer = function (parent, W, H, z) {
+    const svg = G3M.s("svg", { viewBox: `0 0 ${W} ${H}`, width: W, height: H }, parent);
+    Object.assign(svg.style, G3M.fill, { overflow: "visible", pointerEvents: "none" });
+    if (z != null) svg.style.zIndex = z;
+    return svg;
+  };
+
+  // ------------------------------------------------------------------ Stage
+  /* A 1920x1080 (configurable) frame, scaled to fit its host. All scene
+   * coordinates are in stage pixels regardless of the display size. */
+  G3M.Stage = class Stage {
+    constructor(host, opts = {}) {
+      this.W = opts.width || 1920;
+      this.H = opts.height || 1080;
+      this.host = host;
+      host.innerHTML = "";
+      host.style.position = host.style.position || "relative";
+      this.root = G3M.h("div", { class: "g3-stage" }, host);
+      G3M.css(this.root, {
+        position: "absolute", left: "0", top: "0", width: this.W + "px", height: this.H + "px",
+        overflow: "hidden", transformOrigin: "0 0", background: G3M.color(opts.background || "white"),
+        fontFamily: G3M.FONT, contain: "strict"
+      });
+      this.scenes = G3M.h("div", {}, this.root); G3M.css(this.scenes, G3M.fill);
+      this.fx = G3M.h("div", {}, this.root);     G3M.css(this.fx, G3M.fill); this.fx.style.zIndex = 50;
+      this.top = G3M.h("div", {}, this.root);    G3M.css(this.top, G3M.fill); this.top.style.zIndex = 90;
+      this.fit();
+      if (window.ResizeObserver) {
+        this._ro = new ResizeObserver(() => this.fit());
+        this._ro.observe(host);
+      }
+    }
+    fit() {
+      const w = this.host.clientWidth || this.W;
+      const s = w / this.W;
+      this.scale = s;
+      this.root.style.transform = `scale(${s})`;
+      this.host.style.height = (this.H * s) + "px";
+    }
+    destroy() { if (this._ro) this._ro.disconnect(); this.host.innerHTML = ""; }
+  };
+
+  // ------------------------------------------------------------------ Timeline
+  /* Items are renderers placed on a time axis. render(lt, state, t) receives the
+   * local time clamped to the item, a state (-1 before, 0 during, 1 after) and
+   * the global time. Items hold their first frame before they start and their
+   * last frame after they end, so seeking anywhere gives a coherent picture. */
+  G3M.Timeline = class Timeline {
+    constructor() { this.items = []; this.duration = 0; this.markers = []; }
+    add(render, start = 0, duration = 0, opts = {}) {
+      const it = { render, start, duration, z: opts.z || 0 };
+      this.items.push(it);
+      this.duration = Math.max(this.duration, start + duration);
+      return it;
+    }
+    mark(label, t) { this.markers.push({ label, t }); }
+    extend(t) { this.duration = Math.max(this.duration, t); }
+    /* Two passes: items outside their span first (holds, resets), then the
+     * active ones. An idle transition resetting a scene's styles must never
+     * run after an active transition has just set them. */
+    render(t) {
+      const active = [];
+      for (const it of this.items) {
+        const lt = t - it.start;
+        const state = lt < 0 ? -1 : lt > it.duration ? 1 : 0;
+        if (state === 0) active.push([it, lt]);
+        else it.render(clamp(lt, 0, it.duration), state, t);
+      }
+      for (const [it, lt] of active) it.render(clamp(lt, 0, it.duration), 0, t);
+    }
+  };
+
+  // ------------------------------------------------------------------ Player
+  G3M.Player = class Player {
+    constructor(timeline, opts = {}) {
+      this.tl = timeline; this.t = 0; this.playing = false;
+      this.rate = 1; this.loop = !!opts.loop; this.listeners = [];
+      this._tick = this._tick.bind(this);
+    }
+    on(fn) { this.listeners.push(fn); return this; }
+    play() {
+      if (this.t >= this.tl.duration) this.t = 0;
+      this.playing = true; this._last = performance.now();
+      requestAnimationFrame(this._tick); this._emit();
+    }
+    pause() { this.playing = false; this._emit(); }
+    toggle() { this.playing ? this.pause() : this.play(); }
+    replay() { this.t = 0; this.render(); this.play(); }
+    seek(t) { this.t = clamp(t, 0, this.tl.duration); this.render(); }
+    render() { this.tl.render(this.t); this._emit(); }
+    _emit() { for (const f of this.listeners) f(this.t, this); }
+    _tick(now) {
+      if (!this.playing) return;
+      const dt = Math.min(100, now - this._last); this._last = now;
+      this.t += dt * this.rate;
+      if (this.t >= this.tl.duration) {
+        if (this.loop && this.tl.duration > 0) this.t %= this.tl.duration;
+        else { this.t = this.tl.duration; this.playing = false; }
+      }
+      this.render();
+      if (this.playing) requestAnimationFrame(this._tick);
+    }
+  };
+
+  /* Deterministic frame export. In a headless browser:
+   *   G3M.frameTimes(fps) -> [0, 16.67, ...]; call window.g3Seek(t) per frame
+   * then screenshot. tools/render.py does exactly this. */
+  G3M.frameTimes = function (duration, fps = 60) {
+    const n = Math.ceil(duration / 1000 * fps) + 1, out = [];
+    for (let i = 0; i < n; i++) out.push(Math.min(duration, i * 1000 / fps));
+    return out;
+  };
+
+})(window.G3M = window.G3M || {});
+
+</script>
+<script>/* motion/text.js */
+/* Kinetic typography.
+ *
+ * BigText builds giant display text fitted to the frame, split into lines and
+ * letters so any entrance can address either. Entrances and exits are pure
+ * functions of time returning a transform, so they compose with anything.
+ *
+ * Copy always comes from configuration. Nothing in here knows a word of it.
+ */
+(function (G3M) {
+  "use strict";
+  const { h, css, kf, ease: E, clamp } = G3M;
+
+  G3M.BigText = function BigText(parent, cfg = {}) {
+    const lines = Array.isArray(cfg.text) ? cfg.text : String(cfg.text || "").split("\n");
+    const W = cfg.stageW || 1920, H = cfg.stageH || 1080;
+    const wrap = h("div", {}, parent);
+    css(wrap, { position: "absolute", left: "0", top: "0", width: W + "px", height: H + "px",
+      display: "flex", flexDirection: "column", justifyContent: "center",
+      alignItems: cfg.align === "left" ? "flex-start" : cfg.align === "right" ? "flex-end" : "center",
+      padding: cfg.align === "center" || !cfg.align ? "0" : "0 80px", boxSizing: "border-box",
+      pointerEvents: "none" });
+    const lineEls = [], letters = [];
+    for (const text of lines) {
+      const line = h("div", {}, wrap);
+      css(line, { fontFamily: G3M.FONT, fontWeight: 900, fontStretch: (cfg.stretch ?? 72) + "%",
+        color: G3M.color(cfg.color || "ink"), lineHeight: String(cfg.leading ?? .84),
+        whiteSpace: "nowrap", letterSpacing: (cfg.tracking ?? -0.02) + "em",
+        textTransform: cfg.uppercase === false ? "none" : "uppercase",
+        willChange: "transform", transformOrigin: "50% 60%" });
+      const ls = [];
+      for (const ch of text) {
+        const sp = h("span", { text: ch === " " ? "\u00a0" : ch }, line);
+        css(sp, { display: "inline-block", willChange: "transform" });
+        ls.push(sp);
+      }
+      lineEls.push(line); letters.push(ls);
+    }
+    // Fit: the widest line spans `width` of the frame, capped by height.
+    function fit() {
+      const target = (cfg.width ?? .9) * W;
+      let size = cfg.size || 0;
+      if (!size) {
+        const st = { fontStretch: (cfg.stretch ?? 72) + "%", letterSpacing: (cfg.tracking ?? -0.02) + "em",
+          textTransform: cfg.uppercase === false ? "none" : "uppercase", fontSize: "100px" };
+        const widest = Math.max(1, ...lines.map(l => G3M.measureText(l, st)));
+        size = 100 * target / widest;
+        const maxByHeight = (cfg.maxHeight ?? .86) * H / (lines.length * (cfg.leading ?? .84));
+        size = Math.min(size, maxByHeight);
+      }
+      for (const l of lineEls) l.style.fontSize = size + "px";
+      return size;
+    }
+    const size = fit();
+    return { el: wrap, lines: lineEls, letters, size, fit };
+  };
+
+  /* Entrances. Each returns {x, y, sx, sy, rot, op} for local time t (ms)
+   * since the element started entering. `rest` is the resting rotation. */
+  const IN = {
+    slam(t, rest = -3) {
+      // accelerates at the camera, hits, squashes, springs back
+      const hit = 210;
+      if (t < hit) {
+        const p = E.inExpo(clamp(t / hit));
+        return { sx: 3.4 - 2.4 * p, sy: 3.4 - 2.4 * p, rot: rest - 7 * (1 - p), op: clamp(t / 50), y: 0, x: 0 };
+      }
+      const d = t - hit;
+      const sq = kf(d, [[0, .16], [90, -.06, E.outQuad], [200, .025, E.inOutQuad], [320, 0, E.outQuad]]);
+      return { sx: 1 + sq * .55, sy: 1 - sq, rot: rest, op: 1, x: 0, y: 0 };
+    },
+    pop(t, rest = 0) {
+      const sc = kf(t, [[0, 0], [260, 1.13, E.outCubic], [400, .96, E.inOutQuad], [520, 1, E.outQuad]]);
+      return { sx: sc, sy: sc, rot: kf(t, [[0, rest - 10], [420, rest, E.pop]]), op: t > 0 ? 1 : 0, x: 0, y: 0 };
+    },
+    drop(t, rest = 0) {
+      const land = 330;
+      if (t < land) {
+        const p = E.inQuad(clamp(t / land));
+        return { y: -1300 * (1 - p), sx: .92, sy: 1.12, rot: rest, op: 1, x: 0 };
+      }
+      const d = t - land;
+      const sq = kf(d, [[0, .22], [110, -.08, E.outQuad], [230, .03, E.inOutQuad], [360, 0, E.outQuad]]);
+      return { y: 0, sx: 1 + sq * .5, sy: 1 - sq, rot: rest, op: 1, x: 0 };
+    },
+    grow(t, rest = 0) {
+      const sc = kf(t, [[0, .02], [520, 1.06, E.outExpo], [700, 1, E.outQuad]]);
+      return { sx: sc, sy: sc, rot: rest, op: clamp(t / 60), x: 0, y: 0 };
+    },
+    slide(t, rest = 0, dir = -1) {
+      const x = kf(t, [[0, dir * 2200], [380, -dir * 70, E.outQuint], [560, 0, E.inOutQuad]]);
+      const skew = kf(t, [[0, 0], [200, -dir * 14], [460, 0, E.outQuad]]);
+      return { x, y: 0, sx: 1, sy: 1, rot: rest, op: 1, skew };
+    },
+    whip(t, rest = -8) {
+      const x = kf(t, [[0, 2400], [300, -40, E.outExpo], [480, 0, E.inOutQuad]]);
+      return { x, y: 0, sx: kf(t, [[0, 1.5], [300, .96, E.outExpo], [480, 1, E.outQuad]]), sy: 1,
+        rot: rest, op: 1, skew: kf(t, [[0, -24], [300, 6, E.outExpo], [480, 0, E.outQuad]]) };
+    },
+    none() { return { x: 0, y: 0, sx: 1, sy: 1, rot: 0, op: 1 }; }
+  };
+
+  const OUT = {
+    fly(t) {       // rushes past the camera
+      const p = E.inCubic(clamp(t / 360));
+      return { sx: 1 + p * 5, sy: 1 + p * 5, op: 1 - clamp((t - 220) / 140), x: 0, y: 0, rot: 0 };
+    },
+    drop(t) {
+      const p = E.inBack(1.6)(clamp(t / 420));
+      return { y: p * 1400, x: 0, sx: 1, sy: 1, rot: p * 8, op: 1 };
+    },
+    split(t, i, n) { // lines part vertically
+      const dir = i < (n - 1) / 2 ? -1 : i > (n - 1) / 2 ? 1 : (i % 2 ? 1 : -1);
+      const p = E.inBack(1.4)(clamp(t / 420));
+      return { y: dir * p * 1200, x: 0, sx: 1, sy: 1, rot: 0, op: 1 };
+    },
+    shrink(t) {
+      const sc = kf(t, [[0, 1], [110, 1.08, E.outQuad], [330, 0, E.inBack(2)]]);
+      return { sx: sc, sy: sc, op: 1, x: 0, y: 0, rot: 0 };
+    },
+    none() { return { x: 0, y: 0, sx: 1, sy: 1, rot: 0, op: 1 }; }
+  };
+  G3M.textIn = IN; G3M.textOut = OUT;
+
+  G3M.applyTransform = function (el, f, baseRot = 0) {
+    el.style.transform =
+      `translate(${f.x || 0}px,${f.y || 0}px) rotate(${f.rot ?? baseRot}deg) ` +
+      `skewX(${f.skew || 0}deg) scale(${f.sx ?? 1},${f.sy ?? 1})`;
+    el.style.opacity = f.op ?? 1;
+  };
+
+  /* Drive a BigText through entrance -> hold -> exit.
+   * cfg: entrance, exit, stagger (ms between lines), holdUntil (ms), rest rotation */
+  G3M.animateText = function (bt, t, cfg = {}) {
+    const n = bt.lines.length;
+    const inFx = IN[cfg.entrance || "slam"] || IN.slam;
+    const outFx = OUT[cfg.exit || "none"] || OUT.none;
+    const stagger = cfg.stagger ?? 170;
+    const exitAt = cfg.exitAt ?? Infinity;
+    bt.lines.forEach((line, i) => {
+      const rest = (cfg.rotate ?? (cfg.entrance === "slam" ? -3 : 0)) * (i % 2 ? -.6 : 1);
+      const lt = t - i * stagger;
+      if (lt < 0) { line.style.opacity = 0; return; }
+      let f = inFx(lt, rest, cfg.dir);
+      if (t >= exitAt) {
+        const o = outFx(t - exitAt - (n - 1 - i) * (cfg.exitStagger ?? 40), i, n);
+        f = { ...f, x: (f.x || 0) + o.x, y: (f.y || 0) + o.y,
+          sx: f.sx * o.sx, sy: f.sy * o.sy, rot: f.rot + (o.rot || 0), op: f.op * o.op };
+      }
+      G3M.applyTransform(line, f);
+    });
+  };
+
+})(window.G3M = window.G3M || {});
+
+</script>
+<script>/* motion/cursor.js */
+/* Giant cursor overlay.
+ *
+ * Deliberately oversized and graphic. Build a script of moves and clicks, then
+ * render(t). Moves follow a bent path rather than a straight robotic line.
+ *
+ *   const cur = G3M.Cursor(svgLayer, { x: 1500, y: 900 });
+ *   cur.move(1200, 620, { at: 200, dur: 700 });
+ *   cur.click({ at: 950 });
+ *   cur.drag([1200,620], [600,400], { at: 1400, dur: 800 });
+ *   cur.render(t);
+ */
+(function (G3M) {
+  "use strict";
+  const { s, set, C, kf, ease: E, clamp } = G3M;
+  const ARROW = "M0,0 L0,118 L30,90 L52,138 L76,127 L54,80 L94,80 Z";
+
+  G3M.Cursor = function Cursor(parent, opts = {}) {
+    const root = s("g", { class: "g3-cursor" }, parent);
+    const fx = s("g", {}, root);
+    const hand = s("g", {}, root);
+    const scaleBase = opts.scale ?? 1;
+    s("path", { d: ARROW, fill: G3M.color(opts.fill || "ink"), stroke: G3M.color(opts.stroke || "#FFFFFF"),
+      "stroke-width": 9, "stroke-linejoin": "round", "paint-order": "stroke" }, hand);
+
+    const moves = [], clicks = [], vis = [];
+    let x0 = opts.x ?? 1600, y0 = opts.y ?? 900, cursorT = 0, lastX = x0, lastY = y0;
+
+    const api = {
+      el: root,
+      get end() { return cursorT; },
+      move(x, y, o = {}) {
+        const at = o.at ?? cursorT, dur = o.dur ?? 650;
+        moves.push({ at, dur, from: [lastX, lastY], to: [x, y], bend: o.bend ?? .16,
+          ease: G3M.easing(o.ease || "inOutCubic") });
+        lastX = x; lastY = y; cursorT = at + dur; return api;
+      },
+      click(o = {}) {
+        const at = o.at ?? cursorT;
+        clicks.push({ at, x: lastX, y: lastY, style: o.style || "ring" });
+        cursorT = at + (o.hold ?? 260); return api;
+      },
+      doubleClick(o = {}) {
+        const at = o.at ?? cursorT;
+        api.click({ at, hold: 130 }); api.click({ at: at + 150, hold: o.hold ?? 280 });
+        return api;
+      },
+      drag(from, to, o = {}) {
+        const at = o.at ?? cursorT;
+        api.move(from[0], from[1], { at, dur: o.approach ?? 350 });
+        clicks.push({ at: at + (o.approach ?? 350), x: from[0], y: from[1], style: "press", release: (o.dur ?? 700) });
+        api.move(to[0], to[1], { at: at + (o.approach ?? 350) + 80, dur: o.dur ?? 700, bend: .08 });
+        clicks.push({ at: cursorT, x: to[0], y: to[1], style: "ring" });
+        cursorT += 240; return api;
+      },
+      hide(o = {}) { vis.push({ at: o.at ?? cursorT, on: false }); return api; },
+      show(o = {}) { vis.push({ at: o.at ?? cursorT, on: true }); return api; },
+      wait(ms) { cursorT += ms; return api; },
+
+      position(t) {
+        let p = [x0, y0];
+        for (const m of moves) {
+          if (t < m.at) break;
+          const k = m.ease(clamp((t - m.at) / m.dur));
+          p = G3M.curve(m.from, m.to, k, m.bend);
+        }
+        return p;
+      },
+      render(t) {
+        let on = opts.visible ?? true;
+        for (const v of vis) if (t >= v.at) on = v.on;
+        const [x, y] = api.position(t);
+        // press squash from the nearest click
+        let press = 0;
+        for (const c of clicks) {
+          const d = t - c.at;
+          if (c.style === "press" && d >= 0 && d <= (c.release || 0) + 80) press = Math.max(press, .16);
+          else if (d >= 0 && d < 220) press = Math.max(press, kf(d, [[0, 0], [60, .2, E.outQuad], [220, 0, E.pop]]));
+        }
+        // lean into motion: a slight tilt while moving fast
+        const [px, py] = api.position(t - 16);
+        const vx = x - px;
+        const tilt = clamp(vx * .25, -10, 10);
+        set(hand, { transform: `translate(${x},${y}) rotate(${-8 + tilt}) scale(${scaleBase * (1 + press * .4)},${scaleBase * (1 - press)})` });
+        set(root, { opacity: on ? 1 : 0 });
+
+        // click effects
+        fx.innerHTML = "";
+        for (const c of clicks) {
+          const d = t - c.at;
+          if (d < 0 || d > 700 || c.style === "press") continue;
+          const p = clamp(d / 520);
+          const r = 18 + E.outCubic(p) * 150 * scaleBase;
+          s("circle", { cx: c.x, cy: c.y, r, fill: "none", stroke: C.yellow,
+            "stroke-width": 26 * (1 - p) + 2, opacity: 1 - p }, fx);
+          const r2 = 10 + E.outExpo(clamp(d / 380)) * 90 * scaleBase;
+          s("circle", { cx: c.x, cy: c.y, r: r2, fill: "none", stroke: C.ink,
+            "stroke-width": 6, opacity: 1 - clamp(d / 380) }, fx);
+          // starburst
+          const q = clamp(d / 340);
+          if (q < 1) for (let i = 0; i < 8; i++) {
+            const a = i / 8 * Math.PI * 2 - Math.PI / 8;
+            const r0 = 60 + E.outCubic(q) * 110, r1 = r0 + 34 * (1 - q);
+            s("path", { d: `M${c.x + Math.cos(a) * r0},${c.y + Math.sin(a) * r0} L${c.x + Math.cos(a) * r1},${c.y + Math.sin(a) * r1}`,
+              stroke: C.ink, "stroke-width": 9, "stroke-linecap": "round", opacity: 1 - q }, fx);
+          }
+        }
+      }
+    };
+    return api;
+  };
+
+})(window.G3M = window.G3M || {});
+
+</script>
+<script>/* motion/typing.js */
+/* Typing system.
+ *
+ * A script of operations compiles to a list of timed text states, so render(t)
+ * is exact and deterministic: jitter comes from a seeded generator.
+ *
+ *   const box = G3M.TypeBox(parent, { x: 360, y: 700, width: 1200 });
+ *   box.type("Fix this issue").pause(400).delete("issue")
+ *      .type("entire bloody thing").pause(300).submit();
+ *   box.render(t);
+ */
+(function (G3M) {
+  "use strict";
+  const { h, css, kf, ease: E, clamp, C } = G3M;
+
+  G3M.TypeBox = function TypeBox(parent, cfg = {}) {
+    const W = cfg.width ?? 1180, x = cfg.x ?? (1920 - W) / 2, y = cfg.y ?? 700;
+    const speed = cfg.speed ?? 52;          // ms per character, before jitter
+    const jitter = cfg.jitter ?? .45;       // 0 = metronomic
+    const rnd = G3M.rng(cfg.seed ?? 3);
+
+    const box = h("div", {}, parent);
+    css(box, { position: "absolute", left: x + "px", top: y + "px", width: W + "px", height: "150px",
+      background: G3M.color(cfg.fill || "#FFFFFF"), borderRadius: "75px", border: `8px solid ${C.ink}`,
+      boxSizing: "border-box", display: "flex", alignItems: "center", padding: "0 150px 0 64px",
+      fontFamily: G3M.FONT, fontWeight: 700, fontSize: "58px", color: C.ink, transformOrigin: "50% 50%",
+      willChange: "transform" });
+    const textEl = h("span", {}, box);
+    css(textEl, { whiteSpace: "pre", letterSpacing: "-0.01em" });
+    const caret = h("span", {}, box);
+    css(caret, { display: "inline-block", width: "7px", height: "66px", background: C.ink,
+      marginLeft: "4px", borderRadius: "4px" });
+    const ph = h("span", { text: cfg.placeholder || "" }, box);
+    css(ph, { position: "absolute", left: "64px", color: "#9AA0A6", fontWeight: 600, whiteSpace: "pre" });
+    const send = h("div", {}, box);
+    css(send, { position: "absolute", right: "18px", top: "50%", width: "98px", height: "98px",
+      marginTop: "-49px", borderRadius: "50%", background: C.yellow, border: `7px solid ${C.ink}`,
+      boxSizing: "border-box", display: "flex", alignItems: "center", justifyContent: "center",
+      willChange: "transform" });
+    send.innerHTML = `<svg width="46" height="46" viewBox="0 0 46 46"><path d="M23 38 V9 M10 21 L23 8 L36 21"
+      fill="none" stroke="${C.ink}" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+    const ghost = h("div", {}, parent);   // the submitted text flying off
+    css(ghost, { position: "absolute", left: (x + 64) + "px", top: (y + 40) + "px", fontFamily: G3M.FONT,
+      fontWeight: 700, fontSize: "58px", color: C.ink, whiteSpace: "pre", opacity: 0, willChange: "transform" });
+
+    // compiled state
+    const states = [{ t: 0, text: "", typing: false }];
+    let t = cfg.at ?? 0, text = "", submitAt = null;
+    const push = (s, typing = true) => states.push({ t, text: s, typing });
+
+    const api = {
+      el: box,
+      get end() { return t; },
+      type(str, o = {}) {
+        const sp = o.speed ?? speed;
+        for (const ch of str) {
+          let d = sp * (1 + (rnd() * 2 - 1) * jitter);
+          if (ch === " ") d *= 1.35;              // a beat between words
+          if (/[.,!?]/.test(ch)) d *= 2.2;
+          t += d; text += ch; push(text);
+        }
+        return api;
+      },
+      pause(ms) { t += ms; push(text, false); return api; },
+      delete(what, o = {}) {
+        let n = typeof what === "number" ? what
+              : (text.endsWith(what) ? what.length : Math.min(text.length, String(what).length));
+        const sp = o.speed ?? speed * .45;
+        if (typeof what === "string" && text.endsWith(" " + what)) n = what.length;
+        while (n-- > 0) { t += sp; text = text.slice(0, -1); push(text); }
+        return api;
+      },
+      replace(what, str) { return api.delete(what).pause(120).type(str); },
+      // autocomplete: the rest of the word appears at once
+      complete(str) { t += 90; text += str; push(text); return api; },
+      submit(o = {}) { t += 120; submitAt = t; t += o.dur ?? 700; push("", false); return api; },
+
+      render(now) {
+        // find current state
+        let st = states[0];
+        for (const s of states) { if (s.t <= now) st = s; else break; }
+        const submitted = submitAt != null && now >= submitAt;
+        const shown = submitted ? "" : st.text;
+        textEl.textContent = shown;
+        ph.style.opacity = shown ? 0 : 1;
+        // caret: solid while typing, blinking when idle
+        const lastChange = st.t;
+        const idle = now - lastChange > 140;
+        caret.style.opacity = submitted ? 0 : (!idle ? 1 : (Math.floor((now - lastChange) / 530) % 2 ? 0 : 1));
+        // submit: button presses, box squashes, text flies off
+        if (submitAt != null) {
+          const d = now - submitAt;
+          const press = kf(d, [[0, 1], [70, .82, E.outQuad], [260, 1, E.pop]]);
+          send.style.transform = `scale(${press})`;
+          const sq = kf(d, [[0, 0], [90, .08, E.outQuad], [300, 0, E.bouncy]]);
+          box.style.transform = `scale(${1 + sq * .4},${1 - sq})`;
+          const fly = clamp(d / 520);
+          ghost.textContent = d >= 0 ? (states.filter(s => s.t < submitAt).pop() || {}).text || "" : "";
+          ghost.style.opacity = d >= 0 && d < 520 ? 1 - E.inQuad(fly) : 0;
+          ghost.style.transform = `translate(${E.inCubic(fly) * 180}px,${-E.outCubic(fly) * 260}px) scale(${1 - fly * .35})`;
+        } else {
+          send.style.transform = "scale(1)"; box.style.transform = "none"; ghost.style.opacity = 0;
+        }
+      }
+    };
+    return api;
+  };
+
+})(window.G3M = window.G3M || {});
+
+</script>
+<script>/* motion/video.js */
+/* Media compositing.
+ *
+ *   const m = G3M.Media(sceneEl, { src: "demo.mp4", treatment: "browser" });
+ *   m.setMedia("other.mp4");
+ *   m.camera({ zoom: 2.4, fx: .72, fy: .34, dim: .3 });   // per frame
+ *
+ * src can be "mock" (a built-in stand-in g3po app), an image or a video URL.
+ * Video time is driven from the timeline (seek on render) so exports are exact.
+ *
+ * Treatments: fullscreen, browser, card, circle, tilted, pip, split-left,
+ *             split-right
+ */
+(function (G3M) {
+  "use strict";
+  const { h, css, C, clamp } = G3M;
+
+  const FRAMES = {
+    fullscreen: { x: 0, y: 0, w: 1920, h: 1080, r: 0, chrome: false },
+    browser:    { x: 210, y: 120, w: 1500, h: 860, r: 34, chrome: true },
+    card:       { x: 260, y: 150, w: 1400, h: 790, r: 44, chrome: false },
+    circle:     { x: 560, y: 140, w: 800, h: 800, r: 400, chrome: false },
+    tilted:     { x: 260, y: 150, w: 1400, h: 790, r: 36, chrome: true, rot: -5 },
+    pip:        { x: 1260, y: 640, w: 600, h: 360, r: 28, chrome: false },
+    "split-left":  { x: 60, y: 150, w: 880, h: 780, r: 36, chrome: false },
+    "split-right": { x: 980, y: 150, w: 880, h: 780, r: 36, chrome: false }
+  };
+  G3M.MEDIA_FRAMES = FRAMES;
+
+  G3M.Media = function Media(parent, cfg = {}) {
+    const f = { ...(FRAMES[cfg.treatment || "browser"] || FRAMES.browser), ...(cfg.frame || {}) };
+    const box = h("div", {}, parent);
+    css(box, { position: "absolute", left: f.x + "px", top: f.y + "px", width: f.w + "px", height: f.h + "px",
+      borderRadius: f.r + "px", overflow: "hidden", background: C.ink,
+      border: f.r && !cfg.noBorder ? `8px solid ${C.ink}` : "none", boxSizing: "border-box",
+      transformOrigin: "50% 50%", willChange: "transform" });
+    let chromeH = 0;
+    if (f.chrome) {
+      chromeH = 56;
+      const bar = h("div", {}, box);
+      css(bar, { position: "absolute", left: 0, top: 0, right: 0, height: chromeH + "px", background: "#2A2C2F",
+        display: "flex", alignItems: "center", gap: "14px", paddingLeft: "26px", zIndex: 2 });
+      for (const c of ["#E0452B", "#FFC400", "#3FA66B"]) {
+        const d = h("div", {}, bar); css(d, { width: "18px", height: "18px", borderRadius: "50%", background: c });
+      }
+      const url = h("div", {}, bar);
+      css(url, { marginLeft: "30px", height: "30px", width: "44%", borderRadius: "15px", background: "#3A3D41" });
+    }
+    const view = h("div", {}, box);        // the viewport the camera moves inside
+    css(view, { position: "absolute", left: 0, top: chromeH + "px", right: 0, bottom: 0, overflow: "hidden" });
+    const content = h("div", {}, view);
+    css(content, { position: "absolute", left: 0, top: 0, width: "100%", height: "100%", transformOrigin: "0 0",
+      willChange: "transform, filter" });
+    const dimmer = h("div", {}, view);
+    css(dimmer, { position: "absolute", inset: 0, pointerEvents: "none", opacity: 0,
+      background: "rgba(28,29,31,.62)" });
+    const spot = h("div", {}, view);
+    css(spot, { position: "absolute", inset: 0, pointerEvents: "none", opacity: 0 });
+
+    let video = null, mock = null;
+    const vw = f.w - 0, vh = f.h - chromeH;
+
+    function setMedia(src) {
+      content.innerHTML = ""; video = null; mock = null;
+      if (!src || src === "mock") {
+        mock = G3M.MockApp(content, { width: 1600, height: 900 });
+        const k = Math.max(vw / 1600, vh / 900);
+        mock.el.style.transform = `scale(${k})`; mock.el.style.transformOrigin = "0 0";
+        return;
+      }
+      if (/\.(mp4|webm|mov|m4v)(\?|#|$)/i.test(src) || src.startsWith("blob:video") || cfg.kind === "video") {
+        video = h("video", { src, muted: "", playsinline: "", preload: "auto" }, content);
+        video.muted = true;
+        css(video, { width: "100%", height: "100%", objectFit: "cover", display: "block" });
+      } else {
+        const img = h("img", { src, alt: "" }, content);
+        css(img, { width: "100%", height: "100%", objectFit: "cover", display: "block" });
+      }
+    }
+    setMedia(cfg.src);
+
+    const api = {
+      el: box, frame: f, get mock() { return mock; }, get video() { return video; },
+      setMedia(src) { setMedia(src); return api; },
+      /* Camera state, applied every frame:
+       *   zoom, fx, fy  zoom factor and the focus point (0..1 of the view)
+       *   panX, panY    extra offset in px
+       *   rot           slight rotation of the whole frame
+       *   blur, dim     0..1
+       *   spot          {x, y, r} normalised spotlight, or null
+       *   mediaTime     seconds, for deterministic video */
+      camera(c = {}) {
+        const z = Math.max(1, c.zoom ?? 1), fx = c.fx ?? .5, fy = c.fy ?? .5;
+        // Small zooms pivot on the focus point (it stays put); larger zooms
+        // also drift it toward the centre of the frame. Always clamped so the
+        // media never exposes its own edge.
+        const k = clamp((z - 1) / .8);
+        const ox = fx * vw * (1 - z), oy = fy * vh * (1 - z);
+        const cx = vw / 2 - fx * vw * z, cy = vh / 2 - fy * vh * z;
+        let X = G3M.lerp(ox, cx, k) + (c.panX || 0), Y = G3M.lerp(oy, cy, k) + (c.panY || 0);
+        X = clamp(X, vw - vw * z, 0); Y = clamp(Y, vh - vh * z, 0);
+        content.style.transform = `translate(${X}px,${Y}px) scale(${z})`;
+        content.style.filter = c.blur ? `blur(${c.blur * 22}px)` : "none";
+        dimmer.style.opacity = c.dim || 0;
+        if (c.spot) {
+          const sx = c.spot.x * 100, sy = c.spot.y * 100, r = c.spot.r ?? .18;
+          spot.style.opacity = 1;
+          spot.style.background =
+            `radial-gradient(circle at ${sx}% ${sy}%, transparent ${r * 100 * .9}%, rgba(28,29,31,.66) ${r * 100}%)`;
+        } else spot.style.opacity = 0;
+        if (video && c.mediaTime != null && video.readyState >= 1) {
+          const want = Math.max(0, c.mediaTime % (video.duration || 1e9));
+          if (Math.abs(video.currentTime - want) > .04) video.currentTime = want;
+        }
+        return api;
+      },
+      // stage-space coordinates of a normalised point inside the media
+      point(nx, ny) {
+        return [f.x + nx * vw, f.y + chromeH + ny * vh];
+      }
+    };
+    api.camera({});
+    return api;
+  };
+
+  /* A stand-in g3po app. Not a real screen: just believable enough that the
+   * video effects have something to act on until real recordings arrive.
+   * update(t, runAt) animates the agents once "Run all" is pressed. */
+  G3M.MockApp = function MockApp(parent, cfg = {}) {
+    const W = cfg.width || 1600, H = cfg.height || 900;
+    const el = h("div", {}, parent);
+    css(el, { position: "absolute", left: 0, top: 0, width: W + "px", height: H + "px", background: "#F4F2EC",
+      fontFamily: G3M.FONT, color: C.ink, display: "flex" });
+    const side = h("div", {}, el);
+    css(side, { width: "300px", background: C.ink, color: "#fff", padding: "34px 30px", boxSizing: "border-box" });
+    const logo = h("div", { html: `<span style="display:inline-block;width:46px;height:32px;border-radius:14px;
+      background:${C.yellow};vertical-align:middle;margin-right:12px"></span>g3po` }, side);
+    css(logo, { fontWeight: 900, fontSize: "40px", marginBottom: "44px", letterSpacing: "-.02em" });
+    ["Agents", "Tasks", "Runs", "Harnesses", "Settings"].forEach((n, i) => {
+      const it = h("div", { text: n }, side);
+      css(it, { padding: "16px 20px", borderRadius: "14px", marginBottom: "8px", fontSize: "26px", fontWeight: 700,
+        background: i === 0 ? "rgba(255,196,0,.16)" : "transparent", color: i === 0 ? C.yellow : "#C9CCD0" });
+    });
+    const main = h("div", {}, el);
+    css(main, { flex: 1, padding: "40px 48px", boxSizing: "border-box", position: "relative" });
+    const head = h("div", {}, main);
+    css(head, { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "30px" });
+    const ttl = h("div", { text: "Parallel agents" }, head);
+    css(ttl, { fontSize: "46px", fontWeight: 900, letterSpacing: "-.02em" });
+    const run = h("div", { text: "Run all" }, head);
+    css(run, { background: C.yellow, border: `5px solid ${C.ink}`, borderRadius: "40px", padding: "16px 40px",
+      fontSize: "30px", fontWeight: 900, transformOrigin: "50% 50%" });
+    const names = ["Refactor auth flow", "Write migration tests", "Fix flaky CI job", "Update API docs", "Triage new issues"];
+    const bars = [], pills = [];
+    names.forEach((n, i) => {
+      const row = h("div", {}, main);
+      css(row, { display: "flex", alignItems: "center", gap: "22px", background: "#fff", borderRadius: "22px",
+        padding: "20px 26px", marginBottom: "16px", border: "3px solid #E4E1D8" });
+      const av = h("div", {}, row);
+      css(av, { width: "56px", height: "40px", borderRadius: "18px", background: C.yellow, position: "relative", flexShrink: 0 });
+      av.innerHTML = `<i style="position:absolute;left:13px;top:13px;width:10px;height:10px;border-radius:50%;background:${C.ink}"></i>
+                      <i style="position:absolute;right:13px;top:13px;width:10px;height:10px;border-radius:50%;background:${C.ink}"></i>`;
+      const lab = h("div", { text: n }, row);
+      css(lab, { fontSize: "27px", fontWeight: 700, width: "420px" });
+      const track = h("div", {}, row);
+      css(track, { flex: 1, height: "16px", borderRadius: "8px", background: "#EDEAE2", overflow: "hidden" });
+      const bar = h("div", {}, track);
+      css(bar, { height: "100%", width: "0%", background: C.ink, borderRadius: "8px" });
+      const pill = h("div", { text: "Idle" }, row);
+      css(pill, { fontSize: "22px", fontWeight: 800, padding: "8px 18px", borderRadius: "20px", background: "#EDEAE2",
+        width: "118px", textAlign: "center" });
+      bars.push(bar); pills.push(pill);
+    });
+    const api = {
+      el, W, H,
+      // normalised positions of things worth pointing at, relative to the app
+      targets: { run: [.9, .085], row0: [.45, .22], row2: [.45, .44], logo: [.07, .06] },
+      update(t, runAt = null) {
+        const pressed = runAt != null && t >= runAt;
+        run.style.transform = runAt != null && t >= runAt && t < runAt + 200
+          ? `scale(${G3M.kf(t - runAt, [[0, 1], [70, .9], [200, 1, G3M.ease.pop]])})` : "scale(1)";
+        bars.forEach((b, i) => {
+          const start = runAt + i * 90, dur = 1400 + i * 380;
+          const p = pressed ? clamp((t - start) / dur) : 0;
+          b.style.width = (G3M.ease.inOutCubic(p) * 100) + "%";
+          b.style.background = p >= 1 ? C.green : C.ink;
+          pills[i].textContent = !pressed ? "Idle" : p >= 1 ? "Done" : "Running";
+          pills[i].style.background = !pressed ? "#EDEAE2" : p >= 1 ? "#D8EFE1" : "#FFE9A8";
+        });
+      }
+    };
+    api.update(0, null);
+    return api;
+  };
+
+})(window.G3M = window.G3M || {});
+
+</script>
+<script>/* characters/g3.js */
+/* G3 — the g3po mascot, as a pose-driven rig.
+ *
+ * Geometry comes from the original artwork (units scaled so the feet sit at
+ * y = 0 and the antenna tip at about y = -300). Nothing here animates by
+ * itself: callers compute a pose for time t and call set(pose). That keeps G3
+ * deterministic and lets every scene direct him the same way.
+ *
+ * Pose keys (all optional):
+ *   x, y, scale, rot, flip         placement
+ *   lift                           hop height above the ground (shadow shrinks)
+ *   squash                         +: flattened wide, -: stretched tall
+ *   tilt                           head tilt in degrees
+ *   lookX, lookY                   -1..1 where the eyes look
+ *   blink                          0..1 eyelid closure
+ *   eyes                           'round' | 'happy' | 'squint' | 'wide'
+ *   mouth                          'none' | 'smile' | 'o'
+ *   antenna                        wobble angle in degrees
+ *   armL, armR                     arm angles in degrees (0 hangs down, 180 up)
+ *   legL, legR                     leg swing in degrees
+ *   headphones                     boolean, for the DJ variant
+ */
+(function (G3M) {
+  "use strict";
+  const { s, set, C } = G3M;
+
+  const INK = "#232629", LIMB = C.yellowDeep, FEET = "#4D5660";
+
+  G3M.G3 = function G3(parent, opts = {}) {
+    const yellow = G3M.color(opts.color || "yellow");
+    // Ink outline, on by default: it's the storyboard's sticker look, and it is
+    // what keeps a yellow G3 visible on a yellow scene.
+    const O = opts.outline === false ? {} : { stroke: INK, "stroke-width": 7, "stroke-linejoin": "round" };
+    const root = s("g", { class: "g3" }, parent);
+    const shadow = s("ellipse", { cx: 0, cy: 2, rx: 92, ry: 13, fill: "rgba(28,29,31,.14)" }, root);
+    const lifted = s("g", {}, root);
+    const body = s("g", {}, lifted);               // squash group, origin at feet
+
+    // legs
+    const legL = s("g", {}, body), legR = s("g", {}, body);
+    s("rect", { x: -40, y: -56, width: 32, height: 44, rx: 12, fill: LIMB, ...O }, legL);
+    s("rect", { x: -52, y: -19, width: 50, height: 19, rx: 9.5, fill: FEET, ...O }, legL);
+    s("rect", { x: 8, y: -56, width: 32, height: 44, rx: 12, fill: LIMB, ...O }, legR);
+    s("rect", { x: 2, y: -19, width: 50, height: 19, rx: 9.5, fill: FEET, ...O }, legR);
+
+    // arms sit behind the torso
+    const armL = s("g", {}, body), armR = s("g", {}, body);
+    s("rect", { x: -88, y: -114, width: 32, height: 60, rx: 16, fill: LIMB, ...O }, armL);
+    s("rect", { x: 56, y: -114, width: 32, height: 60, rx: 16, fill: LIMB, ...O }, armR);
+
+    // torso
+    s("rect", { x: -12, y: -134, width: 24, height: 26, rx: 9, fill: LIMB, ...O }, body);
+    s("rect", { x: -54, y: -120, width: 108, height: 76, rx: 24, fill: yellow, ...O }, body);
+    s("rect", { x: -29, y: -95, width: 58, height: 35, rx: 8, fill: C.grey }, body);
+    s("rect", { x: -21, y: -87, width: 17, height: 19, rx: 3.5, fill: C.blue }, body);
+    s("rect", { x: 4, y: -87, width: 17, height: 19, rx: 3.5, fill: "#C0392B" }, body);
+
+    // head
+    const head = s("g", {}, body);
+    const antenna = s("g", {}, head);
+    s("path", { d: "M0,-258 L0,-288", stroke: "#B9BCC0", "stroke-width": 9, "stroke-linecap": "round" }, antenna);
+    const tip = s("circle", { cx: 0, cy: -294, r: 11, fill: C.red }, antenna);
+
+    const phones = s("g", { opacity: 0 }, head);
+    s("path", { d: "M-92,-190 Q0,-300 92,-190", fill: "none", stroke: "#4D5660", "stroke-width": 14, "stroke-linecap": "round" }, phones);
+
+    s("rect", { x: -100, y: -258, width: 200, height: 136, rx: 66, fill: yellow, ...O }, head);
+    const cheeks = s("g", { opacity: .85 }, head);
+    s("circle", { cx: -70, cy: -160, r: 14, fill: C.cheek }, cheeks);
+    s("circle", { cx: 70, cy: -160, r: 14, fill: C.cheek }, cheeks);
+
+    const cupsL = s("rect", { x: -114, y: -212, width: 30, height: 52, rx: 13, fill: "#4D5660" }, phones);
+    const cupsR = s("rect", { x: 84, y: -212, width: 30, height: 52, rx: 13, fill: "#4D5660" }, phones);
+    s("rect", { x: -108, y: -202, width: 16, height: 32, rx: 7, fill: C.blue }, phones);
+    s("rect", { x: 92, y: -202, width: 16, height: 32, rx: 7, fill: C.blue }, phones);
+    phones.appendChild(cupsL); phones.appendChild(cupsR);   // cups in front of the head
+
+    // eyes: four expressions, swapped by visibility
+    const eyeX = [-35, 35], eyeY = -194;
+    const round = [], lids = [];
+    const eRound = s("g", {}, head), eHappy = s("g", {}, head),
+          eSquint = s("g", {}, head), eWide = s("g", {}, head);
+    for (const ex of eyeX) {
+      const lid = s("g", { transform: `translate(${ex},${eyeY})` }, eRound);
+      const disc = s("g", {}, lid);
+      s("circle", { cx: 0, cy: 0, r: 28, fill: INK }, disc);
+      const hl = s("g", {}, disc);
+      s("circle", { cx: -9, cy: -9, r: 9.5, fill: "#fff" }, hl);
+      s("circle", { cx: 9, cy: 9, r: 4, fill: "#C9CCD0" }, hl);
+      round.push({ disc, hl }); lids.push(lid);
+      s("path", { d: `M${ex - 17},${eyeY + 6} Q${ex},${eyeY - 16} ${ex + 17},${eyeY + 6}`,
+        fill: "none", stroke: INK, "stroke-width": 10, "stroke-linecap": "round" }, eHappy);
+      const dir = ex < 0 ? 1 : -1;
+      s("path", { d: `M${ex - 14 * dir},${eyeY - 12} L${ex + 12 * dir},${eyeY} L${ex - 14 * dir},${eyeY + 12}`,
+        fill: "none", stroke: INK, "stroke-width": 10, "stroke-linecap": "round", "stroke-linejoin": "round" }, eSquint);
+      s("circle", { cx: ex, cy: eyeY, r: 33, fill: "#fff" }, eWide);
+      s("circle", { cx: ex, cy: eyeY + 2, r: 16, fill: INK }, eWide);
+      s("circle", { cx: ex - 5, cy: eyeY - 4, r: 5, fill: "#fff" }, eWide);
+    }
+    const mouthSmile = s("path", { d: "M-12,-150 Q0,-139 12,-150", fill: "none", stroke: INK,
+      "stroke-width": 6, "stroke-linecap": "round", opacity: 0 }, head);
+    const mouthO = s("ellipse", { cx: 0, cy: -148, rx: 8, ry: 10, fill: INK, opacity: 0 }, head);
+
+    let lastEyes = null;
+    function setEyes(mode) {
+      if (mode === lastEyes) return;
+      lastEyes = mode;
+      eRound.setAttribute("opacity", mode === "round" ? 1 : 0);
+      eHappy.setAttribute("opacity", mode === "happy" ? 1 : 0);
+      eSquint.setAttribute("opacity", mode === "squint" ? 1 : 0);
+      eWide.setAttribute("opacity", mode === "wide" ? 1 : 0);
+    }
+
+    const api = {
+      el: root,
+      set(p = {}) {
+        const sc = p.scale ?? 1, flip = p.flip ? -1 : 1;
+        set(root, { transform: `translate(${p.x ?? 0},${p.y ?? 0}) rotate(${p.rot ?? 0}) scale(${sc * flip},${sc})`,
+          opacity: p.opacity ?? 1 });
+        const lift = p.lift ?? 0;
+        set(lifted, { transform: `translate(0,${-lift})` });
+        const sh = Math.max(.35, 1 - lift / 420);
+        set(shadow, { rx: 92 * sh, opacity: sh, visibility: p.shadow === false ? "hidden" : "visible" });
+        const q = p.squash ?? 0;
+        set(body, { transform: `scale(${1 + q * .55},${1 - q})` });
+        set(head, { transform: `rotate(${p.tilt ?? 0} 0 -126)` });
+        set(antenna, { transform: `rotate(${p.antenna ?? 0} 0 -258)` });
+        set(armL, { transform: `rotate(${p.armL ?? 0} -72 -104)` });
+        set(armR, { transform: `rotate(${-(p.armR ?? 0)} 72 -104)` });
+        set(legL, { transform: `rotate(${p.legL ?? 0} -24 -50)` });
+        set(legR, { transform: `rotate(${p.legR ?? 0} 24 -50)` });
+        const lx = (p.lookX ?? 0) * 8, ly = (p.lookY ?? 0) * 6;
+        for (const r of round) {
+          set(r.disc, { transform: `translate(${lx},${ly})` });
+          set(r.hl, { transform: `translate(${lx * .35},${ly * .35})` });
+        }
+        const b = Math.max(0, Math.min(1, p.blink ?? 0));
+        for (const lid of lids) {
+          const ex = lid === lids[0] ? eyeX[0] : eyeX[1];
+          set(lid, { transform: `translate(${ex},${eyeY}) scale(1,${Math.max(.06, 1 - b)})` });
+        }
+        setEyes(p.eyes || "round");
+        set(mouthSmile, { opacity: p.mouth === "smile" ? 1 : 0 });
+        set(mouthO, { opacity: p.mouth === "o" ? 1 : 0 });
+        set(phones, { opacity: p.headphones ? 1 : 0 });
+        set(tip, { opacity: p.tipOff ? .35 : 1 });
+        return api;
+      }
+    };
+    api.set(opts.pose || {});
+    return api;
+  };
+
+  /* Behaviour helpers: small, reusable bits of life. Each returns pose fields
+   * for time t so scenes can mix them into their own keyframes. */
+  G3M.g3Life = {
+    // slow breathing plus the odd blink; seed staggers several G3s
+    idle(t, seed = 0) {
+      const period = 2900 + seed * 370;
+      const bt = (t + seed * 811) % period;
+      const blink = bt < 70 ? bt / 70 : bt < 150 ? 1 - (bt - 70) / 80 : 0;
+      return {
+        squash: Math.sin((t + seed * 300) / 520) * .018,
+        antenna: Math.sin((t + seed * 170) / 380) * 3,
+        blink
+      };
+    },
+    // a single blink starting at t0 (about 150 ms)
+    blink(t, t0) {
+      const d = t - t0;
+      if (d < 0 || d > 160) return 0;
+      return d < 60 ? d / 60 : 1 - (d - 60) / 100;
+    },
+    // two quick blinks
+    doubleBlink(t, t0) {
+      return Math.max(G3M.g3Life.blink(t, t0), G3M.g3Life.blink(t, t0 + 210));
+    },
+    // antenna twang after an impact
+    twang(t, t0, amp = 22) {
+      const d = (t - t0) / 1000;
+      if (d < 0) return 0;
+      return Math.sin(d * 34) * amp * Math.exp(-d * 5.5);
+    },
+    // walk / run cycle
+    stride(t, speed = 1) {
+      const a = Math.sin(t / 1000 * Math.PI * 4 * speed) * 26;
+      return { legL: a, legR: -a, armL: -a * .8, armR: -a * .8,
+               lift: Math.abs(Math.sin(t / 1000 * Math.PI * 4 * speed)) * 10 * speed };
+    }
+  };
+
+})(window.G3M = window.G3M || {});
+
+</script>
+<script>/* characters/friends.js */
+/* Supporting cast, in the same flat language as G3.
+ *
+ * Each character: Friend(parent, opts) -> { el, set(pose) } with feet at y = 0
+ * and a height of roughly 300 units, so they line up with G3 at equal scale.
+ * Shared pose keys: x, y, scale, rot, flip, squash, lift, opacity, lookX.
+ */
+(function (G3M) {
+  "use strict";
+  const { s, set, C } = G3M;
+  const INK = "#232629";
+
+  function frame(parent) {
+    const root = s("g", {}, parent);
+    const shadow = s("ellipse", { cx: 0, cy: 2, rx: 84, ry: 12, fill: "rgba(28,29,31,.14)" }, root);
+    const lifted = s("g", {}, root);
+    const body = s("g", {}, lifted);
+    return { root, shadow, lifted, body };
+  }
+  function pose(f, p, extra) {
+    const sc = p.scale ?? 1, flip = p.flip ? -1 : 1;
+    set(f.root, { transform: `translate(${p.x ?? 0},${p.y ?? 0}) rotate(${p.rot ?? 0}) scale(${sc * flip},${sc})`,
+      opacity: p.opacity ?? 1 });
+    const lift = p.lift ?? 0;
+    set(f.lifted, { transform: `translate(0,${-lift})` });
+    const sh = Math.max(.35, 1 - lift / 420);
+    set(f.shadow, { rx: 84 * sh, opacity: sh });
+    const q = p.squash ?? 0;
+    set(f.body, { transform: `scale(${1 + q * .55},${1 - q})` });
+    if (extra) extra(p);
+  }
+
+  // ---------------------------------------------------------------- G2D2
+  G3M.G2D2 = function (parent) {
+    const f = frame(parent), b = f.body;
+    for (const sx of [-1, 1]) {
+      s("rect", { x: sx * 78 - 14, y: -200, width: 28, height: 150, rx: 12, fill: "#9AA3AC" }, b);
+      s("path", { d: `M${sx * 78 - 18},-50 h36 l12,32 h-60 z`, fill: "#6F7883" }, b);
+      s("rect", { x: sx * 78 - 34, y: -22, width: 68, height: 22, rx: 9, fill: "#4D5660" }, b);
+    }
+    s("rect", { x: -62, y: -206, width: 124, height: 170, rx: 18, fill: "#C6CCD3" }, b);
+    s("rect", { x: -62, y: -160, width: 124, height: 12, fill: "#8C959E" }, b);
+    s("rect", { x: -30, y: -136, width: 26, height: 26, rx: 5, fill: C.blue }, b);
+    s("rect", { x: 6, y: -136, width: 26, height: 26, rx: 5, fill: "#8C959E" }, b);
+    s("rect", { x: -34, y: -82, width: 68, height: 16, rx: 6, fill: C.blue }, b);
+    const dome = s("g", {}, b);
+    s("path", { d: "M-66,-204 A66,66 0 0 1 66,-204 Z", fill: "#D5DAE0" }, dome);
+    s("path", { d: "M-60,-236 A66,66 0 0 1 60,-236 Z", fill: C.blue }, dome);
+    const eye = s("g", {}, dome);
+    s("circle", { cx: 0, cy: -232, r: 18, fill: "#4D5660" }, eye);
+    s("circle", { cx: 0, cy: -232, r: 12, fill: "#1D4D84" }, eye);
+    s("circle", { cx: -4, cy: -236, r: 4, fill: "#7FB6F0" }, eye);
+    s("rect", { x: -48, y: -224, width: 14, height: 16, rx: 3, fill: "#C0392B" }, dome);
+    s("rect", { x: 34, y: -224, width: 14, height: 16, rx: 3, fill: "#C0392B" }, dome);
+    s("rect", { x: -70, y: -208, width: 140, height: 9, rx: 4.5, fill: "#6F7883" }, b);
+    return { el: f.root, set(p = {}) {
+      pose(f, p, q => set(eye, { transform: `translate(${(q.lookX ?? 0) * 22},0)` })); return this; } };
+  };
+
+  // ---------------------------------------------------------------- GB8
+  G3M.GB8 = function (parent) {
+    const f = frame(parent), b = f.body;
+    const ball = s("g", {}, b);
+    s("circle", { cx: 0, cy: -84, r: 84, fill: "#F4F3EF", stroke: "#C9CCD0", "stroke-width": 4 }, ball);
+    const deco = s("g", {}, ball);
+    s("circle", { cx: 0, cy: -84, r: 52, fill: "none", stroke: C.yellow, "stroke-width": 15 }, deco);
+    s("circle", { cx: 0, cy: -84, r: 26, fill: "none", stroke: "#C9CCD0", "stroke-width": 7 }, deco);
+    s("circle", { cx: -46, cy: -128, r: 20, fill: "none", stroke: C.yellow, "stroke-width": 10 }, deco);
+    s("circle", { cx: 48, cy: -36, r: 16, fill: C.yellow }, deco);
+    s("circle", { cx: 50, cy: -130, r: 10, fill: "#C9CCD0" }, deco);
+    const head = s("g", {}, b);
+    s("path", { d: "M-50,-166 A50,50 0 0 1 50,-166 Z", fill: "#F4F3EF", stroke: "#C9CCD0", "stroke-width": 3 }, head);
+    s("path", { d: "M-40,-196 A50,50 0 0 1 40,-196 Z", fill: C.yellow }, head);
+    s("rect", { x: -56, y: -171, width: 112, height: 10, rx: 5, fill: "#B9BCC0" }, head);
+    const eye = s("g", {}, head);
+    s("circle", { cx: -4, cy: -196, r: 19, fill: "#E6E5E1" }, eye);
+    s("circle", { cx: -4, cy: -196, r: 15, fill: INK }, eye);
+    s("circle", { cx: -9, cy: -201, r: 5, fill: "#fff" }, eye);
+    return { el: f.root, set(p = {}) {
+      pose(f, p, q => {
+        set(deco, { transform: `rotate(${q.roll ?? 0} 0 -84)` });
+        set(head, { transform: `rotate(${q.tilt ?? 0} 0 -166)` });
+        set(eye, { transform: `translate(${(q.lookX ?? 0) * 12},0)` });
+      });
+      return this; } };
+  };
+
+  // ---------------------------------------------------------------- Pix
+  G3M.Pix = function (parent) {
+    const f = frame(parent), b = f.body, O = "#D9795A";
+    s("rect", { x: -120, y: -170, width: 42, height: 52, fill: O }, b);
+    s("rect", { x: 78, y: -170, width: 42, height: 52, fill: O }, b);
+    s("rect", { x: -80, y: -220, width: 160, height: 162, fill: O }, b);
+    for (const lx of [-80, -38, 16, 58]) s("rect", { x: lx, y: -60, width: 22, height: 60, fill: O }, b);
+    const open = s("g", {}, b), squint = s("g", { opacity: 0 }, b);
+    s("rect", { x: -40, y: -184, width: 24, height: 24, fill: "#0D0D0D" }, open);
+    s("rect", { x: 16, y: -184, width: 24, height: 24, fill: "#0D0D0D" }, open);
+    s("path", { d: "M-36,-182 L-20,-172 L-36,-162 M36,-182 L20,-172 L36,-162", fill: "none",
+      stroke: "#0D0D0D", "stroke-width": 7, "stroke-linecap": "square" }, squint);
+    return { el: f.root, set(p = {}) {
+      pose(f, p, q => { set(open, { opacity: q.eyes === "squint" ? 0 : 1 });
+                        set(squint, { opacity: q.eyes === "squint" ? 1 : 0 }); });
+      return this; } };
+  };
+
+  // Build any mascot by name
+  G3M.mascot = function (name, parent, opts) {
+    switch (name) {
+      case "g2d2": return G3M.G2D2(parent, opts);
+      case "gb8": return G3M.GB8(parent, opts);
+      case "pix": return G3M.Pix(parent, opts);
+      case "dj": { const g = G3M.G3(parent, opts); const base = g.set;
+        g.set = p => base({ ...p, headphones: true }); g.set({}); return g; }
+      default: return G3M.G3(parent, opts);
+    }
+  };
+
+})(window.G3M = window.G3M || {});
+
+</script>
+<script>/* transitions/shapes.js */
+/* Transitions, part 1: shape-driven.
+ *
+ * A transition is  (ctx, cfg) -> { duration, render(p) }  with p in 0..1.
+ * ctx: { stage, from, to, mid, fx }
+ *   from, to  the outgoing and incoming scene elements (both visible here)
+ *   mid       a layer between them: above `from`, below `to`
+ *   fx        a layer above everything
+ * The director resets styles when the transition is not active, so render()
+ * only has to describe the moment. Most transitions cover the screen at their
+ * midpoint, which is where the cut happens.
+ */
+(function (G3M) {
+  "use strict";
+  const { s, set, css, C, kf, ease: E, clamp } = G3M;
+  G3M.transitions = G3M.transitions || {};
+  const T = G3M.transitions;
+
+  const W = 1920, H = 1080, DIAG = Math.hypot(W, H);
+  const radiusToCover = (x, y) =>
+    Math.max(Math.hypot(x, y), Math.hypot(W - x, y), Math.hypot(x, H - y), Math.hypot(W - x, H - y)) + 20;
+  G3M.coverRadius = radiusToCover;
+
+  function svgIn(layer) { return G3M.svgLayer(layer, W, H); }
+
+  // 01: a dot pops, then balloons past the edges; the next scene grows out of it
+  T.circleExplosion = function (ctx, cfg = {}) {
+    const x = cfg.x ?? W / 2, y = cfg.y ?? H / 2, R = radiusToCover(x, y);
+    const col = G3M.color(cfg.color || "yellow");
+    const svg = svgIn(ctx.mid);
+    const disc = s("circle", { cx: x, cy: y, r: 0, fill: col }, svg);
+    const ringSvg = svgIn(ctx.fx);
+    const ring = s("circle", { cx: x, cy: y, r: 0, fill: "none", stroke: C.ink, "stroke-width": 16 }, ringSvg);
+    return {
+      duration: cfg.duration ?? 900,
+      render(p) {
+        const r = kf(p, [[0, 0], [.1, 70, E.pop], [.2, 56, E.outQuad], [.5, R, E.inExpo]]);
+        set(disc, { r });
+        const q = clamp((p - .48) / .52);
+        const rr = E.outExpo(q) * R;
+        ctx.to.style.clipPath = `circle(${rr}px at ${x}px ${y}px)`;
+        set(ring, { r: rr, opacity: q > 0 && q < .98 ? 1 - q * .6 : 0, "stroke-width": 18 * (1 - q) + 4 });
+      }
+    };
+  };
+
+  // 02: the frame closes to a pinpoint, holds a beat, then opens on the next scene
+  T.blackIris = function (ctx, cfg = {}) {
+    const x = cfg.x ?? W / 2, y = cfg.y ?? H / 2, R = radiusToCover(x, y);
+    const bg = svgIn(ctx.mid);
+    const sheet = s("path", { fill: G3M.color(cfg.color || "ink"), "fill-rule": "evenodd" }, bg);
+    const hole = r => r <= 0 ? `M0,0 H${W} V${H} H0 Z`
+      : `M0,0 H${W} V${H} H0 Z M${x - r},${y} a${r},${r} 0 1,0 ${2 * r},0 a${r},${r} 0 1,0 ${-2 * r},0 Z`;
+    const dotSvg = svgIn(ctx.fx);
+    const dot = s("circle", { cx: x, cy: y, r: 0, fill: C.yellow }, dotSvg);
+    return {
+      duration: cfg.duration ?? 1000,
+      render(p) {
+        const rOut = kf(p, [[0, R], [.34, 150, E.outQuint], [.44, 0, E.inBack(2.2)]]);
+        sheet.setAttribute("d", hole(Math.max(0, rOut)));
+        set(dot, { r: kf(p, [[.4, 0], [.5, 26, E.pop], [.6, 18], [.64, 0, E.inQuad]]) });
+        const q = clamp((p - .6) / .4);
+        ctx.to.style.clipPath = `circle(${E.outExpo(q) * R}px at ${x}px ${y}px)`;
+      }
+    };
+  };
+
+  // 04: alternating yellow and black panels slam down, then drop away
+  T.verticalPanels = function (ctx, cfg = {}) {
+    const n = cfg.panels ?? 6, w = W / n;
+    const svg = svgIn(ctx.fx);
+    const cols = [G3M.color(cfg.color || "yellow"), G3M.color(cfg.color2 || "ink")];
+    const rects = [];
+    for (let i = 0; i < n; i++)
+      rects.push(s("rect", { x: i * w - 1, y: -H, width: w + 2, height: H, fill: cols[i % 2] }, svg));
+    return {
+      duration: cfg.duration ?? 950,
+      render(p) {
+        rects.forEach((r, i) => {
+          const d = i * .045;
+          const inP = clamp((p - d) / .3), outP = clamp((p - .56 - d) / .3);
+          const y = -H * (1 - E.outQuint(inP)) + H * E.inCubic(outP);
+          const sq = inP >= 1 && outP <= 0 ? kf(p - d - .3, [[0, 14], [.08, 0, E.outQuad]]) : 0;
+          set(r, { y: y - sq, height: H + sq });
+        });
+        ctx.to.style.visibility = p >= .5 ? "visible" : "hidden";
+      }
+    };
+  };
+
+  // 16: the scene flattens into a line, the line flashes, the next scene springs open
+  T.squash = function (ctx, cfg = {}) {
+    const svg = svgIn(ctx.fx);
+    const line = s("rect", { x: 0, y: H / 2 - 7, width: W, height: 14, fill: C.ink, opacity: 0 }, svg);
+    return {
+      duration: cfg.duration ?? 850,
+      render(p) {
+        const a = E.inBack(1.8)(clamp(p / .4));
+        ctx.from.style.transformOrigin = "50% 50%";
+        ctx.from.style.transform = `scale(${1 + a * .12},${Math.max(.004, 1 - a)})`;
+        ctx.from.style.visibility = p < .42 ? "visible" : "hidden";
+        const lineOn = p >= .38 && p < .62;
+        const lw = kf(p, [[.38, 1], [.46, 1.06, E.outQuad], [.56, .2, E.inCubic]]);
+        set(line, { opacity: lineOn ? 1 : 0, fill: p < .47 ? C.ink : C.yellow,
+          x: W / 2 - W * lw / 2, width: W * lw });
+        const b = clamp((p - .54) / .46);
+        const sy = b <= 0 ? 0 : kf(b, [[0, .01], [.55, 1.08, E.outCubic], [.8, .97], [1, 1, E.outQuad]]);
+        ctx.to.style.transformOrigin = "50% 50%";
+        ctx.to.style.transform = `scale(${1 - (1 - Math.min(1, sy)) * .1},${Math.max(.004, sy)})`;
+        ctx.to.style.visibility = p >= .54 ? "visible" : "hidden";
+      }
+    };
+  };
+
+})(window.G3M = window.G3M || {});
+
+</script>
+<script>/* transitions/sweeps.js */
+/* Transitions, part 2: sweeps. Something crosses the frame; the next scene is
+ * revealed along its trailing edge, so the cut is continuous rather than a
+ * cover-and-swap. */
+(function (G3M) {
+  "use strict";
+  const { s, set, C, kf, ease: E, clamp } = G3M;
+  const T = G3M.transitions;
+  const W = 1920, H = 1080;
+
+  const poly = pts => "polygon(" + pts.map(p => `${p[0].toFixed(1)}px ${p[1].toFixed(1)}px`).join(",") + ")";
+  const pathOf = pts => "M" + pts.map(p => p[0].toFixed(1) + "," + p[1].toFixed(1)).join(" L") + " Z";
+
+  // 03: a slanted yellow slab slashes across, black blade leading
+  T.diagonalSlash = function (ctx, cfg = {}) {
+    const slant = cfg.slant ?? .42, band = cfg.band ?? 620, dir = cfg.direction === "left" ? -1 : 1;
+    const svg = G3M.svgLayer(ctx.fx, W, H);
+    const slab = s("path", { fill: G3M.color(cfg.color || "yellow") }, svg);
+    const blade = s("path", { fill: C.ink }, svg);
+    const off = slant * H / 2;
+    const edge = (e, dy) => e + slant * dy;          // x of a slanted line at vertical offset dy
+    const mirror = pts => dir > 0 ? pts : pts.map(([x, y]) => [W - x, y]);
+    return {
+      duration: cfg.duration ?? 720,
+      render(p) {
+        const e = kf(p, [[0, -band - off - 160], [1, W + off + 260, E.whip]]);   // trailing edge
+        const trail = (dy) => edge(e, dy);
+        const lead = (dy) => edge(e + band, dy);
+        slab.setAttribute("d", pathOf(mirror([[trail(-H / 2), 0], [lead(-H / 2), 0], [lead(H / 2), H], [trail(H / 2), H]])));
+        const b0 = e + band + 34, b1 = b0 + 46;
+        blade.setAttribute("d", pathOf(mirror([[edge(b0, -H / 2), 0], [edge(b1, -H / 2), 0], [edge(b1, H / 2), H], [edge(b0, H / 2), H]])));
+        ctx.to.style.clipPath = poly(mirror([[-400, 0], [trail(-H / 2) + 1, 0], [trail(H / 2) + 1, H], [-400, H]]));
+      }
+    };
+  };
+
+  // 05: a thick rounded band wipes across
+  T.wipe = function (ctx, cfg = {}) {
+    const band = cfg.band ?? 700;
+    const svg = G3M.svgLayer(ctx.fx, W, H);
+    const pill = s("rect", { y: -60, height: H + 120, rx: (H + 120) / 2, width: band + H, fill: G3M.color(cfg.color || "yellow") }, svg);
+    const trailCap = s("rect", { y: -60, height: H + 120, width: 0, fill: G3M.color(cfg.color || "yellow") }, svg);
+    return {
+      duration: cfg.duration ?? 700,
+      render(p) {
+        const e = kf(p, [[0, -band - H], [1, W + 60, E.whip]]);     // trailing x
+        set(pill, { x: e });
+        set(trailCap, { x: e, width: H / 2 });                        // flat trailing edge
+        ctx.to.style.clipPath = `inset(0 ${Math.max(0, W - e - 1)}px 0 0)`;
+      }
+    };
+  };
+
+  // 12: a yellow wave rolls across; its trailing crest reveals the next scene
+  T.wave = function (ctx, cfg = {}) {
+    const band = cfg.band ?? 520, amp = cfg.amplitude ?? 70, wl = cfg.wavelength ?? 540;
+    const svg = G3M.svgLayer(ctx.fx, W, H);
+    const body = s("path", { fill: G3M.color(cfg.color || "yellow") }, svg);
+    const crest = s("path", { fill: "none", stroke: C.ink, "stroke-width": 16, "stroke-linecap": "round" }, svg);
+    const N = 36;
+    const xs = (base, phase) => {
+      const out = [];
+      for (let i = 0; i <= N; i++) {
+        const y = -40 + (H + 80) * i / N;
+        out.push([base + Math.sin(y / wl * Math.PI * 2 + phase) * amp, y]);
+      }
+      return out;
+    };
+    return {
+      duration: cfg.duration ?? 950,
+      render(p) {
+        const e = kf(p, [[0, -band - amp * 3], [1, W + amp * 3, E.inOutCubic]]);
+        const phase = p * Math.PI * 3;
+        const trail = xs(e, phase), lead = xs(e + band, phase + .9);
+        body.setAttribute("d", pathOf([...trail, ...lead.slice().reverse()]));
+        const cr = xs(e + band + 40, phase + 1.1);
+        crest.setAttribute("d", "M" + cr.map(q => q[0].toFixed(1) + "," + q[1].toFixed(1)).join(" L"));
+        crest.setAttribute("opacity", p < .96 ? 1 : 0);
+        ctx.to.style.clipPath = "polygon(" +
+          ["-50px -50px", ...trail.map(q => `${(q[0] + 1).toFixed(1)}px ${q[1].toFixed(1)}px`), "-50px 1150px"].join(",") + ")";
+      }
+    };
+  };
+
+})(window.G3M = window.G3M || {});
+
+</script>
+<script>/* transitions/character.js */
+/* Transitions, part 3: someone does the transition. */
+(function (G3M) {
+  "use strict";
+  const { s, set, C, kf, ease: E, clamp } = G3M;
+  const T = G3M.transitions;
+  const W = 1920, H = 1080;
+
+  // 06: G3 sprints across dragging a giant yellow sheet; the next scene is behind it
+  T.g3Run = function (ctx, cfg = {}) {
+    const sheet = cfg.sheet ?? 520, ground = cfg.ground ?? 1000, sc = cfg.scale ?? 1.9;
+    const svg = G3M.svgLayer(ctx.fx, W, H);
+    const drape = s("rect", { y: -20, height: H + 40, fill: G3M.color(cfg.color || "yellow") }, svg);
+    const edge = s("rect", { y: -20, height: H + 40, width: 18, fill: C.ink }, svg);
+    const lines = s("g", {}, svg);
+    const g3 = G3M.G3(svg);
+    const dur = cfg.duration ?? 1150;
+    return {
+      duration: dur,
+      render(p) {
+        const x = kf(p, [[0, -260], [1, W + sheet + 260, E.inOutQuad]]);
+        const t = p * dur;
+        const st = G3M.g3Life.stride(t, 1.7);
+        set(drape, { x: x - sheet - 120, width: sheet });
+        set(edge, { x: x - sheet - 138 });
+        ctx.to.style.clipPath = `inset(0 ${Math.max(0, W - (x - sheet - 128))}px 0 0)`;
+        g3.set({ x, y: ground, scale: sc, rot: 9, ...st, armL: 150 + st.armL * .3, armR: 150 - st.armL * .3,
+          eyes: "squint", tilt: -4, antenna: -18 + Math.sin(t / 45) * 6 });
+        lines.innerHTML = "";
+        for (let i = 0; i < 4; i++) {
+          const yy = ground - 110 - i * 70, len = 90 + (i % 2) * 60;
+          s("path", { d: `M${x - 180 - i * 18},${yy} h${-len}`, stroke: C.ink, "stroke-width": 10,
+            "stroke-linecap": "round", opacity: .8 }, lines);
+        }
+      }
+    };
+  };
+
+  /* 07: G3 hauls the next scene in by its edge, struggles, stops, glances at
+   * the camera, and then the panel whips shut and drags him off. */
+  T.g3Push = function (ctx, cfg = {}) {
+    const ground = cfg.ground ?? 1000, sc = cfg.scale ?? 1.6;
+    const svg = G3M.svgLayer(ctx.fx, W, H);
+    const g3 = G3M.G3(svg);
+    const dur = cfg.duration ?? 1700;
+    return {
+      duration: dur,
+      render(p) {
+        const t = p * dur;
+        // panel's left edge
+        const x = kf(t, [[0, W + 40], [220, 1500, E.outCubic], [900, 1120, E.inOutQuad],
+                         [1180, 1110], [1420, -60, E.inExpo], [1580, 30, E.outQuad], [1700, 0, E.outQuad]]);
+        const wobble = t > 220 && t < 900 ? Math.sin(t / 38) * 5 : 0;
+        ctx.to.style.transform = `translateX(${x + wobble}px)`;
+        ctx.to.style.boxShadow = "-18px 0 0 #1C1D1F";
+        // G3 hangs on to the edge
+        const struggling = t < 900, looking = t >= 900 && t < 1180, flung = t >= 1180;
+        const st = struggling ? G3M.g3Life.stride(t, .9) : {};
+        const gx = x - 95 + (flung ? -kf(t, [[1180, 0], [1420, 260, E.inQuad]]) : 0);
+        g3.set({
+          x: gx, y: ground - (flung ? kf(t, [[1180, 0], [1420, 120, E.outQuad]]) : 0), scale: sc, flip: true,
+          rot: struggling ? -12 : flung ? kf(t, [[1180, 0], [1420, -60, E.inQuad]]) : 0,
+          ...st, armL: struggling ? 95 : flung ? 160 : 70, armR: struggling ? 95 : 60,
+          eyes: struggling ? "squint" : flung ? "wide" : "round",
+          lookX: looking ? 0 : -1, lookY: looking ? .4 : 0,
+          blink: looking ? G3M.g3Life.blink(t, 1020) : 0,
+          squash: struggling ? .06 + Math.sin(t / 60) * .02 : 0,
+          antenna: flung ? G3M.g3Life.twang(t, 1180, 30) : Math.sin(t / 70) * 6,
+          opacity: gx < -200 ? 0 : 1
+        });
+      }
+    };
+  };
+
+  // 09: a giant cursor clicks, and the click itself becomes the next scene
+  T.cursorClick = function (ctx, cfg = {}) {
+    const x = cfg.x ?? W * .56, y = cfg.y ?? H * .5, R = G3M.coverRadius(x, y);
+    const dur = cfg.duration ?? 1100;
+    const mid = G3M.svgLayer(ctx.mid, W, H);
+    const disc = s("circle", { cx: x, cy: y, r: 0, fill: G3M.color(cfg.color || "yellow") }, mid);
+    const top = G3M.svgLayer(ctx.fx, W, H);
+    const cur = G3M.Cursor(top, { x: W + 120, y: H + 160, scale: 1.3 });
+    cur.move(x, y, { at: 0, dur: dur * .38 }).click({ at: dur * .42 });
+    return {
+      duration: dur,
+      render(p) {
+        const t = p * dur;
+        cur.render(t);
+        const q = clamp((t - dur * .46) / (dur * .26));
+        set(disc, { r: E.inExpo(q) * R });
+        const r2 = clamp((t - dur * .7) / (dur * .3));
+        ctx.to.style.clipPath = `circle(${E.outExpo(r2) * R}px at ${x}px ${y}px)`;
+        cur.el.setAttribute("opacity", t > dur * .72 ? 0 : 1);
+      }
+    };
+  };
+
+})(window.G3M = window.G3M || {});
+
+</script>
+<script>/* scenes/typography.js */
+/* Scene templates led by typography.
+ * A scene is (el, cfg, stage) -> { duration, render(t) }, where el is a
+ * full-frame container the scene owns. All copy comes from cfg. */
+(function (G3M) {
+  "use strict";
+  const { h, css, s, set, C, kf, ease: E, clamp } = G3M;
+  G3M.scenes = G3M.scenes || {};
+  const S = G3M.scenes;
+
+  const layer = (el, z) => { const d = h("div", {}, el); css(d, G3M.fill); d.style.zIndex = z; return d; };
+  G3M.sceneLayer = layer;
+  const lines = v => Array.isArray(v) ? v : String(v ?? "").split(/\n|\|/).filter(Boolean);
+
+  // ------------------------------------------------------------ FeatureHero
+  S.hero = function (el, cfg) {
+    el.style.background = G3M.color(cfg.background || "yellow");
+    const svgLayer = layer(el, 1), textLayer = layer(el, 2);
+    const bt = G3M.BigText(textLayer, { text: lines(cfg.title || "MEET G3PO"), width: cfg.width ?? .62,
+      align: "left", color: cfg.foreground || "ink", stretch: cfg.stretch ?? 78 });
+    bt.el.style.paddingLeft = "110px";
+    const svg = G3M.svgLayer(svgLayer, 1920, 1080);
+    const g3 = G3M.mascot(cfg.mascot || "g3", svg);
+    let sub = null;
+    if (cfg.subtitle) {
+      sub = h("div", { text: cfg.subtitle }, textLayer);
+      css(sub, { position: "absolute", left: "118px", bottom: "120px", fontWeight: 800, fontSize: "46px",
+        background: C.ink, color: C.white, padding: "18px 34px", borderRadius: "40px", fontFamily: G3M.FONT });
+    }
+    const X = cfg.mascotX ?? 1500, Y = 940, sc = cfg.mascotScale ?? 1.5;
+    return {
+      duration: cfg.duration ?? 2600,
+      render(t) {
+        G3M.animateText(bt, t - 80, { entrance: cfg.entrance || "pop", stagger: 150, rotate: -2,
+          exit: cfg.exit, exitAt: cfg.exitAt });
+        // hop in from the right, land, look at the title, point
+        const air = clamp((t - 300) / 420);
+        const x = kf(t, [[300, 2150], [720, X, E.outCubic]]);
+        const lift = air > 0 && air < 1 ? Math.sin(air * Math.PI) * 170 : 0;
+        const land = t - 720;
+        const squash = land >= 0 ? kf(land, [[0, .22], [120, -.07, E.outQuad], [260, .03], [380, 0, E.outQuad]])
+                                 : (t > 250 && t < 300 ? .12 : air > 0 ? -.06 : 0);
+        const life = G3M.g3Life.idle(t, 1);
+        g3.set({ x, y: Y, scale: sc, lift, squash: squash + (land > 400 ? life.squash : 0),
+          lookX: t > 900 ? -1 : 0, lookY: t > 900 ? -.2 : 0,
+          blink: Math.max(G3M.g3Life.blink(t, 1250), land > 1600 ? life.blink : 0),
+          armL: kf(t, [[1350, 0], [1560, 118, E.pop]]), armR: kf(t, [[1350, 0], [1560, 20, E.pop]]),
+          antenna: G3M.g3Life.twang(t, 720, 18) + life.antenna, flip: false,
+          eyes: t > 1900 ? "happy" : "round" });
+        if (sub) {
+          const f = G3M.textIn.pop(t - 900);
+          G3M.applyTransform(sub, f);
+        }
+      }
+    };
+  };
+
+  // ------------------------------------------------------------ BigTextSlam
+  S.slam = function (el, cfg) {
+    el.style.background = G3M.color(cfg.background || "yellow");
+    const shakeWrap = layer(el, 1);
+    const svg = G3M.svgLayer(layer(shakeWrap, 1), 1920, 1080);
+    const textLayer = layer(shakeWrap, 2);
+    const ls = lines(cfg.text || "PARALLEL.");
+    const bt = G3M.BigText(textLayer, { text: ls, width: cfg.width ?? .94, color: cfg.foreground || "ink",
+      stretch: cfg.stretch ?? 70, leading: .8 });
+    const withG3 = cfg.g3 !== false;
+    // rest the bottom of the text block on G3's head so the landing hits him
+    const blockH = bt.size * (.8 * ls.length) * .86;
+    if (withG3) bt.el.style.transform = `translateY(${cfg.textOffset ?? (835 - 540 - blockH / 2)}px)`;
+    const g3 = withG3 ? G3M.G3(svg) : null;
+    const stagger = cfg.stagger ?? 260, hit = 210;
+    const impacts = ls.map((_, i) => i * stagger + hit);
+    return {
+      duration: cfg.duration ?? 2400,
+      render(t) {
+        G3M.animateText(bt, t, { entrance: cfg.entrance || "slam", stagger, exit: cfg.exit,
+          exitAt: cfg.exitAt ?? (cfg.exit ? (cfg.duration ?? 2400) - 450 : Infinity) });
+        let dx = 0, dy = 0;
+        for (const it of impacts) { const [a, b] = G3M.shake(t, it, 320, cfg.shake ?? 22, it); dx += a; dy += b; }
+        shakeWrap.style.transform = `translate(${dx}px,${dy}px)`;
+        if (!g3) return;
+        // flattened by the first word, pops back, looks up at it
+        const hitT = impacts[0];
+        const d = t - hitT;
+        const squash = d < 0 ? 0 : kf(d, [[0, .5], [520, .5], [640, -.18, E.outQuad], [760, .06], [900, 0, E.outQuad]]);
+        const pinned = d >= 0 && d < 560;
+        g3.set({ x: 960, y: 1050, scale: .82, squash, eyes: pinned ? "squint" : "round",
+          lookY: d > 900 ? -1 : 0, lookX: d > 1300 ? .6 : 0,
+          blink: G3M.g3Life.blink(t, hitT + 1100),
+          antenna: pinned ? 70 : G3M.g3Life.twang(t, hitT + 560, 34),
+          lift: d > 560 && d < 760 ? Math.sin((d - 560) / 200 * Math.PI) * 60 : 0 });
+      }
+    };
+  };
+
+  // ------------------------------------------------------------ BigTextSequence
+  S.sequence = function (el, cfg) {
+    el.style.background = G3M.color(cfg.background || "white");
+    const wrap = layer(el, 1);
+    const ls = lines(cfg.text || "SHIP.|FASTER.");
+    const bt = G3M.BigText(wrap, { text: ls, width: cfg.width ?? .8, color: cfg.foreground || "ink",
+      stretch: cfg.stretch ?? 72, leading: .82 });
+    const beat = cfg.beat ?? 420;
+    return {
+      duration: cfg.duration ?? (ls.length * beat + 1500),
+      render(t) {
+        G3M.animateText(bt, t, { entrance: cfg.entrance || "pop", stagger: beat, rotate: cfg.rotate ?? -2,
+          exit: cfg.exit, exitAt: cfg.exitAt ?? (cfg.exit ? (cfg.duration ?? ls.length * beat + 1500) - 460 : Infinity) });
+        // a tiny camera punch on every word
+        let k = 0;
+        for (let i = 0; i < ls.length; i++) k += kf(t - i * beat, [[0, 0], [60, .02, E.outQuad], [260, 0, E.outQuad]]);
+        wrap.style.transform = `scale(${1 + k})`;
+      }
+    };
+  };
+
+  // ------------------------------------------------------------ SplitTypography
+  /* The word is printed on yellow columns, one per letter. The columns part
+   * to show the footage behind, then fly off. */
+  S.split = function (el, cfg) {
+    el.style.background = C.ink;
+    const media = G3M.Media(layer(el, 1), { src: cfg.src || "mock", treatment: "fullscreen", kind: cfg.kind });
+    const front = layer(el, 2);
+    const word = String(cfg.text || "SPLIT").toUpperCase();
+    const n = word.length, colW = 1920 / n;
+    // each letter must fit inside its own column, so size by the widest glyph
+    const st = { fontStretch: (cfg.stretch ?? 70) + "%" };
+    const widest = Math.max(1, ...word.split("").map(ch => G3M.measureText(ch, st)));
+    const size = Math.min(100 * colW * .86 / widest, 1080 * .62);
+    const cols = [];
+    for (let i = 0; i < n; i++) {
+      const c = h("div", {}, front);
+      css(c, { position: "absolute", left: (i * colW - 1) + "px", top: "0", width: (colW + 2) + "px", height: "1080px",
+        background: G3M.color(cfg.background || "yellow"), overflow: "visible", willChange: "transform" });
+      const l = h("div", { text: word[i] }, c);
+      css(l, { position: "absolute", left: "50%", top: "50%", transform: "translate(-50%,-54%)",
+        fontFamily: G3M.FONT, fontWeight: 900, fontStretch: (cfg.stretch ?? 70) + "%", fontSize: size + "px",
+        lineHeight: ".8", color: G3M.color(cfg.foreground || "ink") });
+      cols.push({ c, l });
+    }
+    return {
+      duration: cfg.duration ?? 2300,
+      render(t) {
+        media.camera({ zoom: kf(t, [[500, 1.18], [1500, 1, E.outCubic]]), fx: .5, fy: .5,
+          mediaTime: t / 1000, blur: kf(t, [[400, .5], [1100, 0, E.outCubic]]) });
+        cols.forEach(({ c, l }, i) => {
+          const pop = G3M.textIn.pop(t - i * 45);
+          l.style.transform = `translate(-50%,-54%) scale(${pop.sx},${pop.sy})`;
+          l.style.opacity = pop.op;
+          const mid = (n - 1) / 2, off = i - mid;
+          const spread = kf(t, [[650, 0], [1050, 1, E.outBack(1.6)]]);
+          const gapX = off * spread * 150;
+          const fly = clamp((t - 1350 - Math.abs(off) * 40) / 480);
+          const dirY = i % 2 ? 1 : -1;
+          const fy = E.inBack(1.5)(fly) * 1250 * dirY;
+          const rot = E.inQuad(fly) * 22 * dirY * (off < 0 ? -1 : 1);
+          c.style.transform = `translate(${gapX}px,${fy}px) rotate(${rot}deg)`;
+        });
+      }
+    };
+  };
+
+})(window.G3M = window.G3M || {});
+
+</script>
+<script>/* scenes/media.js */
+/* Scene templates built around footage. */
+(function (G3M) {
+  "use strict";
+  const { h, css, s, set, C, kf, ease: E, clamp } = G3M;
+  const S = G3M.scenes;
+  const layer = G3M.sceneLayer;
+
+  /* A camera track: a list of moves, each easing from wherever the previous
+   * move left the camera. Deterministic for any t. */
+  G3M.CameraTrack = function (initial = {}) {
+    const base = { zoom: 1, fx: .5, fy: .5, dim: 0, blur: 0, panX: 0, panY: 0, ...initial };
+    const moves = [];
+    return {
+      moves,
+      to(at, dur, target, ease = "inOutCubic") { moves.push({ at, dur, target, ease: G3M.easing(ease) }); return this; },
+      at(t) {
+        let cur = { ...base };
+        for (const m of moves.slice().sort((a, b) => a.at - b.at)) {
+          if (t < m.at) break;
+          const p = m.ease(clamp((t - m.at) / (m.dur || 1)));
+          const next = { ...cur };
+          for (const k in m.target) {
+            if (k === "spot") { next.spot = p > 0 ? m.target.spot : cur.spot; continue; }
+            next[k] = G3M.lerp(cur[k] ?? 0, m.target[k], p);
+          }
+          cur = next;
+        }
+        return cur;
+      }
+    };
+  };
+
+  // ------------------------------------------------------------ VideoReveal
+  S.video = function (el, cfg) {
+    el.style.background = G3M.color(cfg.background || "white");
+    const media = G3M.Media(layer(el, 1), { src: cfg.src || "mock", treatment: cfg.treatment || "browser", kind: cfg.kind });
+    const cam = G3M.CameraTrack();
+    let runAt = cfg.runAt ?? null;
+    const f = media.frame;
+    const entrance = cfg.entrance || "pop";
+    const api = {
+      duration: cfg.duration ?? 700,
+      media, cam,
+      click(t) { if (runAt == null && media.mock) runAt = t; },
+      zoom(t, o) {
+        cam.to(t, o.duration ?? 900, { zoom: o.scale ?? 1, fx: o.x ?? .5, fy: o.y ?? .5,
+          ...(o.dim != null ? { dim: o.dim } : {}), ...(o.blur != null ? { blur: o.blur } : {}) }, o.ease || "inOutCubic");
+      },
+      spotlight(t, o) { cam.to(t, 1, { spot: o ? { x: o.x, y: o.y, r: o.r ?? .16 } : null }); },
+      render(t) {
+        let sc = 1, rot = f.rot || 0, y = 0;
+        if (entrance === "pop") {
+          sc = kf(t, [[0, .55], [360, 1.04, E.outCubic], [520, .99], [640, 1, E.outQuad]]);
+          rot += kf(t, [[0, -6], [520, 0, E.pop]]);
+        } else if (entrance === "rise") {
+          y = kf(t, [[0, 1100], [520, -24, E.outQuint], [700, 0, E.outQuad]]);
+        }
+        media.el.style.transform = `translateY(${y}px) rotate(${rot}deg) scale(${sc})`;
+        media.el.style.opacity = t > 0 || entrance === "none" ? 1 : 0;
+        const c = cam.at(t);
+        media.camera({ ...c, mediaTime: t / 1000 });
+        if (media.mock) media.mock.update(t, runAt);
+      }
+    };
+    return api;
+  };
+
+  // ------------------------------------------------------------ CursorDemo
+  /* A giant cursor heads for the Run button. G3 is standing in its path,
+   * notices, and dives out of the way. The click lands, the agents start, the
+   * camera punches in, and G3 peeks back to approve. */
+  S.cursorDemo = function (el, cfg) {
+    el.style.background = G3M.color(cfg.background || "yellow");
+    const v = S.video(layer(el, 1), { ...cfg, treatment: cfg.treatment || "browser", background: "transparent" });
+    const top = layer(el, 3);
+    const svg = G3M.svgLayer(top, 1920, 1080);
+    const g3 = G3M.G3(svg);
+    const cur = G3M.Cursor(svg, { x: 2100, y: 1250, scale: 1.25 });
+    const run = v.media.point(.905, .086);
+    const g3X = 1180, g3Y = 1010;
+    cur.move(1400, 820, { at: 500, dur: 650, bend: .1 })          // heads straight at G3
+       .wait(260)
+       .move(run[0], run[1] + 10, { dur: 520, bend: -.25 })
+       .click({ hold: 400 });
+    const clickAt = 500 + 650 + 260 + 520;
+    v.zoom(clickAt + 500, { x: .55, y: .42, scale: 1.7, duration: 900 });
+    v.zoom(clickAt + 2300, { x: .5, y: .5, scale: 1, duration: 650 });
+    return {
+      duration: cfg.duration ?? 4700,
+      render(t) {
+        if (t >= clickAt) v.click(clickAt);
+        v.render(t);
+        cur.render(t);
+        // G3: idles, sees the cursor coming, leaps aside, later peeks back in
+        const notice = 780, leap = 1050, back = clickAt + 1500;
+        const leapP = clamp((t - leap) / 380);
+        let x = g3X + E.outCubic(leapP) * 520;
+        const lift = leapP > 0 && leapP < 1 ? Math.sin(leapP * Math.PI) * 220 : 0;
+        const landD = t - (leap + 380);
+        let squash = landD >= 0 ? kf(landD, [[0, .25], [120, -.06, E.outQuad], [260, 0, E.outQuad]]) : 0;
+        if (t > notice && t < leap) squash = kf(t - notice, [[0, 0], [200, .16, E.outQuad]]);   // crouch
+        const y = g3Y + (t > back ? E.inBack(1.4)(clamp((t - back - 900) / 350)) * 400 : 0);
+        g3.set({ x, y, scale: 1.05, lift, squash,
+          eyes: t > notice && t < leap + 380 ? "wide" : t > back + 200 ? "happy" : "round",
+          lookX: t < notice ? 0 : t < back ? -1 : -.6, lookY: t > notice && t < leap ? .5 : 0,
+          rot: leapP > 0 && leapP < 1 ? 16 : 0,
+          armL: t > back + 250 ? kf(t - back - 250, [[0, 20], [200, 150, E.pop]]) : 0,
+          antenna: G3M.g3Life.twang(t, leap + 380, 26),
+          blink: G3M.g3Life.blink(t, back + 80), opacity: 1 });
+      }
+    };
+  };
+
+  // ------------------------------------------------------------ TypingDemo
+  /* cfg.script: [["type","Fix this issue"],["pause",400],["delete","issue"],
+   *              ["type","entire bloody thing"],["pause",300],["submit"]] */
+  S.typing = function (el, cfg) {
+    el.style.background = G3M.color(cfg.background || "yellow");
+    const ui = layer(el, 1);
+    const svg = G3M.svgLayer(layer(el, 2), 1920, 1080);
+    const box = G3M.TypeBox(ui, { x: 470, y: 600, width: 1250, placeholder: cfg.placeholder || "Ask g3po to…",
+      speed: cfg.speed ?? 55, seed: cfg.seed ?? 5, at: 500 });
+    const script = cfg.script || [["type", "Fix this issue"], ["pause", 420], ["delete", "issue"],
+      ["type", "entire bloody thing"], ["pause", 360], ["submit"]];
+    const marks = [];
+    for (const [op, a, b] of script) {
+      const before = box.end;
+      if (op === "type") box.type(a, b || {});
+      else if (op === "pause") box.pause(a);
+      else if (op === "delete") box.delete(a);
+      else if (op === "replace") box.replace(a, b);
+      else if (op === "complete") box.complete(a);
+      else if (op === "submit") box.submit();
+      marks.push({ op, from: before, to: box.end });
+    }
+    const del = marks.find(m => m.op === "delete");
+    const sub = marks.find(m => m.op === "submit");
+    const g3 = G3M.G3(svg);
+    const end = box.end;
+    return {
+      duration: cfg.duration ?? end + 900,
+      render(t) {
+        box.render(t);
+        const life = G3M.g3Life.idle(t, 2);
+        const suspicious = del && t >= del.from && t < del.to + 500;
+        const after = sub && t >= sub.from;
+        const len = (box.el.querySelector("span") || {}).textContent?.length || 0;
+        g3.set({ x: 290, y: 860, scale: 1.4,
+          lookX: after ? 0 : clamp(-.2 + len / 22, -.2, 1), lookY: .45,
+          eyes: suspicious ? "squint" : after && t > sub.from + 250 ? "happy" : "round",
+          blink: suspicious ? 0 : life.blink, squash: life.squash + (after ? kf(t - sub.from, [[0, 0], [120, .16], [300, -.08, E.outQuad], [460, 0, E.outQuad]]) : 0),
+          lift: after ? kf(t - sub.from, [[120, 0], [330, 90, E.outQuad], [560, 0, E.inQuad]]) : 0,
+          armL: after && t > sub.from + 200 ? 150 : 0, armR: after && t > sub.from + 200 ? 150 : 0,
+          tilt: suspicious ? -9 : 0, antenna: life.antenna });
+      }
+    };
+  };
+
+})(window.G3M = window.G3M || {});
+
+</script>
+<script>/* scenes/mascots.js */
+/* Scenes where the characters carry the idea. */
+(function (G3M) {
+  "use strict";
+  const { h, css, s, set, C, kf, ease: E, clamp } = G3M;
+  const S = G3M.scenes;
+  const layer = G3M.sceneLayer;
+  const L = G3M.g3Life;
+
+  // ------------------------------------------------------------ MascotReaction
+  /* A reel of G3's small moves. Tiny movements are funnier than big ones. */
+  S.reactions = function (el, cfg) {
+    el.style.background = G3M.color(cfg.background || "yellow");
+    const svg = G3M.svgLayer(layer(el, 1), 1920, 1080);
+    const g3 = G3M.mascot(cfg.mascot || "g3", svg);
+    const beats = { glanceL: 600, glanceR: 880, center: 1160, blink: 1450, dbl: 1900, tilt: 2400,
+                    surprise: 3150, proud: 3900, wave: 4650 };
+    return {
+      duration: cfg.duration ?? 5900,
+      render(t) {
+        const b = beats, life = L.idle(t, 3);
+        const pop = kf(t, [[0, 0], [300, 1.12, E.outCubic], [420, .96], [540, 1, E.outQuad]]);
+        const lookX = kf(t, [[b.glanceL - 60, 0], [b.glanceL, -1, E.outQuad], [b.glanceR - 60, -1],
+          [b.glanceR, 1, E.outQuad], [b.center - 60, 1], [b.center, 0, E.outQuad],
+          [b.tilt, 0], [b.tilt + 150, .9, E.outQuad], [b.surprise - 100, .9], [b.surprise, 0]]);
+        const tilt = kf(t, [[b.tilt, 0], [b.tilt + 260, 13, E.pop], [b.surprise - 120, 13], [b.surprise, 0, E.outQuad]]);
+        const suspicious = t >= b.tilt + 150 && t < b.surprise;
+        const surprised = t >= b.surprise && t < b.proud;
+        const proud = t >= b.proud;
+        const hop = surprised ? kf(t - b.surprise, [[0, 0], [160, 120, E.outQuad], [360, 0, E.inQuad]]) : 0;
+        const landSq = surprised ? kf(t - b.surprise, [[0, .14], [80, -.12], [360, -.05], [440, .16, E.outQuad], [620, 0, E.bouncy]]) : 0;
+        const proudSq = proud ? kf(t - b.proud, [[0, 0], [120, .12], [320, -.06, E.outQuad], [480, 0, E.outQuad]]) : 0;
+        const wave = t >= b.wave ? Math.sin((t - b.wave) / 110) * 22 : 0;
+        g3.set({
+          x: 960, y: 900, scale: (cfg.scale ?? 1.9) * pop,
+          lookX, tilt, lift: hop,
+          eyes: surprised ? "wide" : proud ? "happy" : "round",
+          blink: suspicious ? .45 : Math.max(L.blink(t, b.blink), L.doubleBlink(t, b.dbl), t > b.wave + 500 ? life.blink : 0),
+          squash: landSq + proudSq + life.squash,
+          armL: proud && t < b.wave ? kf(t - b.proud, [[0, 0], [260, 150, E.pop]]) : proud ? 20 : 0,
+          armR: proud ? (t < b.wave ? kf(t - b.proud, [[0, 0], [260, 150, E.pop]]) : 145 + wave) : 0,
+          antenna: L.twang(t, b.surprise + 360, 30) + L.twang(t, b.proud + 200, 16) + life.antenna,
+          mouth: surprised ? "o" : "none"
+        });
+      }
+    };
+  };
+
+  // ------------------------------------------------------------ Button gag
+  /* G3 presses the button. Nothing. He looks at the camera. Then everything. */
+  S.buttonGag = function (el, cfg) {
+    el.style.background = G3M.color(cfg.background || "white");
+    const svg = G3M.svgLayer(layer(el, 1), 1920, 1080);
+    const burst = s("g", {}, svg);
+    const bx = 1180, by = 900;
+    const btn = s("g", {}, svg);
+    s("ellipse", { cx: bx, cy: by + 6, rx: 190, ry: 40, fill: "rgba(28,29,31,.15)" }, btn);
+    s("rect", { x: bx - 170, y: by - 60, width: 340, height: 70, rx: 30, fill: C.ink }, btn);
+    const cap = s("g", {}, btn);
+    s("rect", { x: bx - 140, y: by - 120, width: 280, height: 90, rx: 45, fill: G3M.color(cfg.buttonColor || "red") }, cap);
+    s("rect", { x: bx - 104, y: by - 110, width: 120, height: 22, rx: 11, fill: "rgba(255,255,255,.38)" }, cap);
+    const g3 = G3M.G3(svg);
+    const pressAt = 1150, lookAt = 1750, goAt = 2500;
+    const rnd = G3M.rng(11), items = [];
+    const kinds = ["card", "g3", "card", "pill", "g3", "card", "circle", "pill", "card", "g3", "circle", "card", "pill", "g3"];
+    kinds.forEach((k, i) => {
+      const a = -Math.PI * (.08 + .84 * (i / (kinds.length - 1))) + (rnd() - .5) * .25;
+      items.push({ k, a, v: 1300 + rnd() * 900, spin: (rnd() - .5) * 720, delay: rnd() * 120, g: s("g", {}, burst) });
+    });
+    for (const it of items) {
+      if (it.k === "card") {
+        s("rect", { x: -90, y: -52, width: 180, height: 104, rx: 18, fill: "#fff", stroke: C.ink, "stroke-width": 7 }, it.g);
+        s("circle", { cx: -48, cy: 0, r: 20, fill: C.green }, it.g);
+        s("rect", { x: -16, y: -14, width: 84, height: 12, rx: 6, fill: "#C9CCD0" }, it.g);
+        s("rect", { x: -16, y: 8, width: 56, height: 12, rx: 6, fill: "#C9CCD0" }, it.g);
+      } else if (it.k === "g3") {
+        s("rect", { x: -64, y: -44, width: 128, height: 88, rx: 42, fill: C.yellow, stroke: C.ink, "stroke-width": 7 }, it.g);
+        s("circle", { cx: -22, cy: -4, r: 13, fill: C.ink }, it.g); s("circle", { cx: 22, cy: -4, r: 13, fill: C.ink }, it.g);
+      } else if (it.k === "pill") {
+        s("rect", { x: -80, y: -26, width: 160, height: 52, rx: 26, fill: C.ink }, it.g);
+      } else {
+        s("circle", { cx: 0, cy: 0, r: 34, fill: C.yellow, stroke: C.ink, "stroke-width": 7 }, it.g);
+      }
+    }
+    return {
+      duration: cfg.duration ?? 3900,
+      render(t) {
+        // walk in, press, wait, look at camera, launch
+        const walking = t < 900;
+        const x = kf(t, [[0, 360], [900, 900, E.outQuad]]);
+        const st = walking ? L.stride(t, 1) : {};
+        const pressing = t >= pressAt - 150 && t < pressAt + 420;
+        const armR = pressing ? kf(t - (pressAt - 150), [[0, 20], [150, 95, E.outQuad], [420, 60, E.outQuad]]) : 20;
+        const capY = kf(t, [[pressAt - 10, 0], [pressAt + 60, 22, E.outQuad], [pressAt + 360, 0, E.pop],
+                            [goAt - 40, 0], [goAt + 40, 26, E.outQuad], [goAt + 300, 0, E.pop]]);
+        set(cap, { transform: `translate(0,${capY})` });
+        const looking = t >= lookAt && t < goAt;
+        const blown = t >= goAt;
+        const blowX = blown ? kf(t - goAt, [[0, 0], [260, -210, E.outCubic]]) : 0;
+        g3.set({
+          x: x + blowX, y: 960, scale: 1.25, ...st,
+          armR: walking ? st.armR : blown ? 150 : armR, armL: blown ? 150 : walking ? st.armL : 0,
+          lookX: looking ? 0 : blown ? 1 : .7, lookY: looking ? .35 : .5,
+          blink: looking ? L.blink(t, lookAt + 380) : 0,
+          eyes: blown ? "wide" : "round", mouth: blown ? "o" : "none",
+          lift: blown ? kf(t - goAt, [[0, 0], [180, 110, E.outQuad], [420, 0, E.inQuad]]) : (st.lift || 0),
+          rot: blown ? kf(t - goAt, [[0, 0], [200, -14, E.outQuad], [600, 0, E.outQuad]]) : 0,
+          squash: blown ? kf(t - goAt, [[420, 0], [500, .2], [700, 0, E.bouncy]]) : 0,
+          antenna: L.twang(t, goAt, 40) + (looking ? 0 : Math.sin(t / 300) * 3)
+        });
+        // the launch
+        for (const it of items) {
+          const d = (t - goAt - it.delay) / 1000;
+          if (d < 0) { set(it.g, { opacity: 0 }); continue; }
+          const px = bx + Math.cos(it.a) * it.v * d;
+          const py = by - 90 + Math.sin(it.a) * it.v * d + 900 * d * d;
+          const sc = kf(d, [[0, .2], [.12, 1.15, E.outQuad], [.25, 1]]);
+          set(it.g, { opacity: 1, transform: `translate(${px},${py}) rotate(${it.spin * d}) scale(${sc})` });
+        }
+      }
+    };
+  };
+
+  // ------------------------------------------------------------ AgentMultiplication
+  /* Parallel agents: one object splits into many. G3 charges up, pops, and his
+   * friends shoot out along arcs. Then he tries to keep track of them all. */
+  S.agents = function (el, cfg) {
+    el.style.background = G3M.color(cfg.background || "yellow");
+    const svg = G3M.svgLayer(layer(el, 1), 1920, 1080);
+    const arrows = s("g", {}, svg);
+    const cast = (cfg.agents || ["g2d2", "gb8", "pix", "dj", "g3"]).slice(0, 7);
+    const home = [960, 1000];
+    const spots = [[330, 720], [560, 420], [960, 330], [1360, 420], [1590, 720], [250, 420], [1670, 420]];
+    const who = cast.map((name, i) => ({ name, m: G3M.mascot(name, svg), to: spots[i], at: 820 + i * 95 }));
+    const paths = who.map(w => s("path", { fill: "none", stroke: C.ink, "stroke-width": 12, "stroke-linecap": "round" }, arrows));
+    const heads = who.map(() => s("path", { fill: C.ink }, arrows));
+    const g3 = G3M.G3(svg);
+    return {
+      duration: cfg.duration ?? 3600,
+      render(t) {
+        const charge = kf(t, [[250, 0], [700, .24, E.inOutQuad], [790, -.16, E.outQuad], [950, .05], [1100, 0, E.outQuad]]);
+        const shake = t > 450 && t < 780 ? Math.sin(t / 18) * 5 : 0;
+        const look = kf(t, [[1500, 0], [1580, -1, E.outQuad], [1760, -1], [1830, 1, E.outQuad],
+                            [2010, 1], [2080, -1, E.outQuad], [2200, -1], [2270, 1, E.outQuad], [2420, 1], [2500, 0, E.outQuad]]);
+        g3.set({ x: home[0] + shake, y: home[1], scale: 1.15, squash: charge,
+          eyes: t > 450 && t < 790 ? "squint" : t > 2650 ? "happy" : "round", lookX: look,
+          blink: L.doubleBlink(t, 2560), antenna: L.twang(t, 790, 34),
+          armL: t > 2700 ? kf(t - 2700, [[0, 0], [240, 140, E.pop]]) : 0,
+          armR: t > 2700 ? kf(t - 2700, [[0, 0], [240, 140, E.pop]]) : 0 });
+        who.forEach((w, i) => {
+          const d = t - w.at;
+          const p = E.outCubic(clamp(d / 520));
+          const [x, y] = G3M.curve([home[0], home[1] - 150], w.to, p, (i < cast.length / 2 ? -1 : 1) * .22);
+          const lift = d >= 0 && d < 520 ? Math.sin(p * Math.PI) * 40 : 0;
+          const land = d - 520;
+          const sq = land >= 0 ? kf(land, [[0, .22], [110, -.08, E.outQuad], [240, 0, E.outQuad]]) : -.1;
+          const sc = d < 0 ? 0 : kf(d, [[0, .15], [200, .62, E.outQuad], [520, .78]]);
+          w.m.set({ x, y, scale: sc, squash: sq, lift, lookX: land > 300 ? (w.to[0] < 960 ? .6 : -.6) : 0,
+            blink: L.blink(t, w.at + 1100 + i * 170), opacity: d < 0 ? 0 : 1, roll: d * .3 });
+          // arrow traces the flight
+          const ap = E.outCubic(clamp((d + 60) / 420));
+          const pts = [];
+          for (let k = 0; k <= 16; k++) pts.push(G3M.curve([home[0], home[1] - 190], [w.to[0], w.to[1] + 30], k / 16 * ap * .82, (i < cast.length / 2 ? -1 : 1) * .22));
+          paths[i].setAttribute("d", "M" + pts.map(q => q[0].toFixed(1) + "," + q[1].toFixed(1)).join(" L"));
+          const fade = 1 - clamp((t - 2200) / 400);
+          paths[i].setAttribute("opacity", d > -60 ? fade : 0);
+          const a = pts[pts.length - 1], b = pts[pts.length - 2] || a;
+          const ang = Math.atan2(a[1] - b[1], a[0] - b[0]);
+          const hd = [[a[0] + Math.cos(ang) * 22, a[1] + Math.sin(ang) * 22],
+                      [a[0] + Math.cos(ang + 2.3) * 22, a[1] + Math.sin(ang + 2.3) * 22],
+                      [a[0] + Math.cos(ang - 2.3) * 22, a[1] + Math.sin(ang - 2.3) * 22]];
+          heads[i].setAttribute("d", "M" + hd.map(q => q.join(",")).join(" L") + " Z");
+          heads[i].setAttribute("opacity", d > 0 ? fade : 0);
+        });
+      }
+    };
+  };
+
+  // ------------------------------------------------------------ Converge / DONE.
+  /* Orchestration: many objects converge into one clean result. */
+  S.converge = function (el, cfg) {
+    el.style.background = G3M.color(cfg.background || "yellow");
+    const inner = layer(el, 1);            // shaken; the background stays put
+    const svg = G3M.svgLayer(layer(inner, 1), 1920, 1080);
+    const textLayer = layer(inner, 2);
+    const bt = G3M.BigText(textLayer, { text: [cfg.text || "DONE."], width: .66, stretch: 72, color: "ink" });
+    bt.el.style.transform = "translateY(-300px)";
+    const g3 = G3M.G3(svg);
+    const n = cfg.count ?? 6, rnd = G3M.rng(4);
+    const ticks = [C.green, C.blue, C.red, C.green, C.green, C.blue, C.green];
+    const cards = [];
+    for (let i = 0; i < n; i++) {
+      const g = s("g", {}, svg);
+      s("rect", { x: -120, y: -56, width: 240, height: 112, rx: 22, fill: "#fff", stroke: C.ink, "stroke-width": 8 }, g);
+      s("circle", { cx: -64, cy: 0, r: 26, fill: ticks[i % ticks.length] }, g);
+      s("path", { d: "M-76,0 l9,10 l18,-20", fill: "none", stroke: "#fff", "stroke-width": 8, "stroke-linecap": "round", "stroke-linejoin": "round" }, g);
+      s("rect", { x: -24, y: -18, width: 110, height: 14, rx: 7, fill: "#C9CCD0" }, g);
+      s("rect", { x: -24, y: 8, width: 76, height: 14, rx: 7, fill: "#C9CCD0" }, g);
+      const side = i % 2 ? 1 : -1;
+      const start = [960 + side * (1150 + rnd() * 200), 250 + rnd() * 600];
+      const a = Math.PI * (1.15 + i / (n - 1) * .7);
+      const ring = [960 + Math.cos(a) * 560, 780 + Math.sin(a) * 330];
+      cards.push({ g, start, ring, rot: (rnd() - .5) * 40, at: 200 + i * 110 });
+    }
+    const result = s("g", {}, svg);
+    s("rect", { x: -170, y: -80, width: 340, height: 160, rx: 30, fill: C.ink }, result);
+    s("path", { d: "M-52,4 l34,34 l72,-76", fill: "none", stroke: C.yellow, "stroke-width": 22, "stroke-linecap": "round", "stroke-linejoin": "round" }, result);
+    const mergeAt = 1500, doneAt = 2050;
+    return {
+      duration: cfg.duration ?? 3500,
+      render(t) {
+        cards.forEach((c, i) => {
+          const d = t - c.at;
+          const p = E.outBack(1.3)(clamp(d / 560));
+          let [x, y] = G3M.curve(c.start, c.ring, clamp(p, 0, 1.2), .12);
+          let sc = 1, rot = c.rot * (1 - clamp(p));
+          const m = clamp((t - mergeAt - i * 30) / 360);
+          if (m > 0) {
+            const q = E.inBack(1.6)(m);
+            x = G3M.lerp(x, 960, q); y = G3M.lerp(y, 560, q); sc = 1 - E.inQuad(m) * .8; rot = rot * (1 - m);
+          }
+          set(c.g, { transform: `translate(${x},${y}) rotate(${rot}) scale(${sc})`, opacity: d < 0 || m >= 1 ? 0 : 1 });
+        });
+        const r = t - (mergeAt + 330);
+        const rs = r < 0 ? 0 : kf(r, [[0, .2], [220, 1.15, E.outCubic], [340, .95], [460, 1, E.outQuad]]);
+        set(result, { transform: `translate(960,560) scale(${rs})`, opacity: r < 0 ? 0 : 1 });
+        G3M.animateText(bt, t - doneAt, { entrance: "slam", rotate: -2 });
+        const cheer = t > mergeAt + 400;
+        g3.set({ x: 960, y: 1030, scale: .95, eyes: cheer ? "happy" : "round",
+          lookY: cheer ? 0 : -.6, lookX: Math.sin(t / 240) * (cheer ? 0 : .8),
+          armL: cheer ? kf(t - mergeAt - 400, [[0, 0], [220, 150, E.pop]]) : 0,
+          armR: cheer ? kf(t - mergeAt - 400, [[0, 0], [220, 150, E.pop]]) : 0,
+          squash: cheer ? kf(t - mergeAt - 400, [[0, .1], [200, -.06, E.outQuad], [360, 0, E.outQuad]]) : 0,
+          lift: t > doneAt + 210 ? kf(t - doneAt - 210, [[0, 0], [160, 70, E.outQuad], [340, 0, E.inQuad]]) : 0,
+          antenna: L.twang(t, doneAt + 210, 30) });
+        const [sx, sy] = G3M.shake(t, doneAt + 210, 300, 16, 9);
+        inner.style.transform = `translate(${sx}px,${sy}px)`;
+      }
+    };
+  };
+
+})(window.G3M = window.G3M || {});
+
+</script>
+<script>/* scenes/logo.js */
+/* The g3po logo ident.
+ *
+ * A yellow ribbon flows in, curls into a spiral, and the spiral becomes G3's
+ * head. The letters snap in, the eyes open, look left, look right, and smile.
+ * The loop version unwinds back into the ribbon and flows out, so it can
+ * repeat forever without a seam.
+ */
+(function (G3M) {
+  "use strict";
+  const { h, css, s, set, C, kf, ease: E, clamp } = G3M;
+  const S = G3M.scenes;
+  const layer = G3M.sceneLayer;
+
+  const HX = 800, HY = 400, HW = 500, HH = 340, HR = 165, HROT = -9;
+
+  function polyLen(pts) {
+    let L = 0; const acc = [0];
+    for (let i = 1; i < pts.length; i++) { L += Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]); acc.push(L); }
+    return { L, acc };
+  }
+  function spiral(cx, cy, r0, r1, a0, turns, n, ry = .72) {
+    const pts = [];
+    for (let i = 0; i <= n; i++) {
+      const u = i / n, a = a0 + turns * Math.PI * 2 * u, r = G3M.lerp(r0, r1, E.inOutQuad(u));
+      pts.push([cx + Math.cos(a) * r, cy + Math.sin(a) * r * ry]);
+    }
+    return pts;
+  }
+  // flows in from the left, then curls clockwise down into the head's centre
+  function entryPath() {
+    const pts = [];
+    for (let i = 0; i <= 40; i++) {
+      const u = i / 40, x = -260 + u * 700;
+      pts.push([x, 820 - Math.sin(u * Math.PI * 1.4) * 170 - u * 60]);
+    }
+    const last = pts[pts.length - 1];
+    const a0 = Math.atan2((last[1] - HY) / .72, last[0] - HX);
+    const r0 = Math.hypot(last[0] - HX, (last[1] - HY) / .72);
+    return pts.concat(spiral(HX, HY, r0, 0, a0, 1.6, 90).slice(1));
+  }
+  // unwinds from the head's centre and flows off to the right
+  function exitPath() {
+    const sp = spiral(HX, HY, 0, 470, Math.PI * .6, 1.4, 80);
+    const last = sp[sp.length - 1], pts = sp.slice();
+    for (let i = 1; i <= 40; i++) {
+      const u = i / 40;
+      pts.push([last[0] + u * (2300 - last[0]), last[1] + Math.sin(u * Math.PI * 1.3) * 150]);
+    }
+    return pts;
+  }
+
+  G3M.Logo = function Logo(parent, cfg = {}) {
+    const svg = G3M.svgLayer(parent, 1920, 1080);
+    const yellow = G3M.color(cfg.color || "yellow"), ink = C.ink;
+    const inPts = entryPath(), outPts = exitPath();
+    const inM = polyLen(inPts), outM = polyLen(outPts);
+    const d = pts => "M" + pts.map(p => p[0].toFixed(1) + "," + p[1].toFixed(1)).join(" L");
+    const ribbonG = s("g", {}, svg);
+    const mkRibbon = pts => ({
+      under: s("path", { d: d(pts), fill: "none", stroke: ink, "stroke-width": 92, "stroke-linecap": "round", "stroke-linejoin": "round" }, ribbonG),
+      over: s("path", { d: d(pts), fill: "none", stroke: yellow, "stroke-width": 62, "stroke-linecap": "round", "stroke-linejoin": "round" }, ribbonG)
+    });
+    const rIn = mkRibbon(inPts), rOut = mkRibbon(outPts);
+
+    const mark = s("g", {}, svg);
+    // letters first, so the head overlaps the top of the g the way the mark does
+    // All outlines are drawn first, then all fills, so overlapping letters
+    // fuse into one sticker silhouette the way the printed mark does.
+    const wordStroke = s("g", {}, mark), wordFill = s("g", {}, mark);
+    const letters = [];
+    const chars = (cfg.wordmark || "g3po").split("");
+    const size = 330;
+    let x = 560;
+    const glyph = (parent, ch, attrs) => {
+      const g = s("g", {}, parent);
+      const tx = s("text", { x: 0, y: 0, "font-size": size, "font-weight": 900, "font-family": G3M.FONT,
+        "text-anchor": "middle", text: ch, ...attrs }, g);
+      tx.style.fontStretch = "88%";
+      return g;
+    };
+    for (const ch of chars) {
+      const gs = glyph(wordStroke, ch, { fill: ink, stroke: ink, "stroke-width": 34, "stroke-linejoin": "round" });
+      const gf = glyph(wordFill, ch, { fill: yellow });
+      letters.push({ gs, gf, ch });
+    }
+    // measure and lay out the letters on a common baseline
+    let adv = letters.map(l => G3M.measureText(l.ch, { fontSize: size + "px", fontStretch: "88%" }));
+    if (!adv.every(a => a > 0)) adv = letters.map(l => l.ch === "3" ? 190 : l.ch === "p" || l.ch === "g" ? 205 : 200);
+    letters.forEach((l, i) => { l.cx = x + adv[i] / 2; l.cy = 850; x += adv[i] - 8; });
+
+    const head = s("g", {}, mark);
+    const ant = s("g", {}, head);
+    s("path", { d: `M0,${-HH / 2 + 8} L0,${-HH / 2 - 70}`, stroke: ink, "stroke-width": 30, "stroke-linecap": "round" }, ant);
+    s("path", { d: `M0,${-HH / 2 + 8} L0,${-HH / 2 - 70}`, stroke: "#B9BCC0", "stroke-width": 14, "stroke-linecap": "round" }, ant);
+    s("circle", { cx: 0, cy: -HH / 2 - 88, r: 30, fill: C.red, stroke: ink, "stroke-width": 12 }, ant);
+    s("rect", { x: -HW / 2, y: -HH / 2, width: HW, height: HH, rx: HR, fill: yellow, stroke: ink, "stroke-width": 30 }, head);
+    const cheeks = s("g", {}, head);
+    s("circle", { cx: -168, cy: 66, r: 34, fill: C.cheek, opacity: .9 }, cheeks);
+    s("circle", { cx: 168, cy: 66, r: 34, fill: C.cheek, opacity: .9 }, cheeks);
+    const eyes = s("g", {}, head);
+    const discs = [], happy = s("g", {}, head);
+    for (const ex of [-96, 96]) {
+      const e = s("g", {}, eyes);
+      const disc = s("g", {}, e);
+      s("circle", { cx: 0, cy: 0, r: 64, fill: ink }, disc);
+      s("circle", { cx: -20, cy: -22, r: 21, fill: "#fff" }, disc);
+      s("circle", { cx: 22, cy: 24, r: 9, fill: "#C9CCD0" }, disc);
+      discs.push({ e, disc, ex });
+      s("path", { d: `M${ex - 40},${14} Q${ex},${-40} ${ex + 40},${14}`, fill: "none", stroke: ink,
+        "stroke-width": 24, "stroke-linecap": "round" }, happy);
+    }
+    const sparks = s("g", {}, mark);
+    const sp = [[-.9, -.95], [-.2, -1.15], [.55, -1.0]];
+    const sparkEls = sp.map(() => s("path", { stroke: ink, "stroke-width": 16, "stroke-linecap": "round" }, sparks));
+
+    let tag = null;
+    if (cfg.tagline) {
+      tag = h("div", { text: cfg.tagline }, parent);
+      css(tag, { position: "absolute", left: "0", right: "0", top: "992px", textAlign: "center",
+        fontFamily: G3M.FONT, fontWeight: 800, fontSize: "40px", letterSpacing: ".22em", textTransform: "uppercase",
+        color: ink, opacity: 0 });
+    }
+
+    function ribbon(r, M, s0, s1) {
+      const len = Math.max(0, s1 - s0);
+      for (const p of [r.under, r.over]) {
+        p.setAttribute("stroke-dasharray", `${len} ${M.L + 400}`);
+        p.setAttribute("stroke-dashoffset", String(-s0));
+        p.setAttribute("opacity", len > 1 ? 1 : 0);
+      }
+    }
+
+    return {
+      svg, tag, inLen: inM.L, outLen: outM.L,
+      /* state: { rin:[s0,s1], rout:[s0,s1], head:{sc,rot}, letters:[{y,sc,rot,op}],
+       *          eyes:{sc,lookX,blink,happy}, cheeks, antenna:{sc,rot}, sparks, squash, tag } */
+      set(st) {
+        ribbon(rIn, inM, ...(st.rin || [0, 0]));
+        ribbon(rOut, outM, ...(st.rout || [0, 0]));
+        const hd = st.head || { sc: 0 };
+        set(head, { transform: `translate(${HX},${HY}) rotate(${HROT + (hd.rot || 0)}) scale(${Math.max(0, hd.sc)})`,
+          opacity: hd.sc > .01 ? 1 : 0 });
+        letters.forEach((l, i) => {
+          const f = (st.letters && st.letters[i]) || { sc: 0, op: 0 };
+          const tr = { transform: `translate(${l.cx},${l.cy + (f.y || 0)}) rotate(${f.rot || 0}) scale(${Math.max(0, f.sc ?? 1)})`,
+            opacity: f.op ?? 1 };
+          set(l.gs, tr); set(l.gf, tr);
+        });
+        const ey = st.eyes || { sc: 0 };
+        discs.forEach(dd => {
+          set(dd.e, { transform: `translate(${dd.ex},-8) scale(${Math.max(0, ey.sc)},${Math.max(.05, ey.sc * (1 - (ey.blink || 0)))})`,
+            opacity: ey.happy ? 0 : 1 });
+          set(dd.disc, { transform: `translate(${(ey.lookX || 0) * 26},${(ey.lookY || 0) * 12})` });
+        });
+        set(happy, { opacity: ey.happy ? 1 : 0, transform: `translate(0,-8)` });
+        set(cheeks, { opacity: st.cheeks ?? 0, transform: `translate(0,${ey.happy ? -8 : 0})` });
+        const an = st.antenna || { sc: 0 };
+        set(ant, { transform: `rotate(${an.rot || 0} 0 ${-HH / 2}) scale(1,${Math.max(0, an.sc)})`,
+          opacity: an.sc > .02 ? 1 : 0 });
+        const sq = st.squash || 0;
+        set(mark, { transform: `translate(960,1000) scale(${1 + sq * .6},${1 - sq}) translate(-960,-1000)` });
+        const k = st.sparks || 0;
+        sparkEls.forEach((el, i) => {
+          const [dx, dy] = sp[i];
+          const cx = HX + dx * HW * .62, cy = HY + dy * HH * .62;
+          const len = 26 + k * 22, off = 10 + k * 26;
+          const a = Math.atan2(dy, dx);
+          el.setAttribute("d", `M${cx + Math.cos(a) * off},${cy + Math.sin(a) * off} l${Math.cos(a) * len},${Math.sin(a) * len}`);
+          el.setAttribute("opacity", k > 0 && k < 1 ? 1 - k * .5 : 0);
+        });
+        if (tag) { tag.style.opacity = st.tag ?? 0; tag.style.transform = `translateY(${(1 - (st.tag ?? 0)) * 26}px)`; }
+      }
+    };
+  };
+
+  /* The shared build-up, 0 -> ~3000 ms. Returns a logo state for time t. */
+  function identState(t, logo, cfg) {
+    const ribbonEnd = 920;
+    const s1 = logo.inLen * E.inOutCubic(clamp(t / ribbonEnd));
+    const s0 = Math.max(0, s1 - 1200) + logo.inLen * E.inQuad(clamp((t - ribbonEnd + 160) / 300));
+    const head = { sc: kf(t, [[ribbonEnd - 90, 0], [ribbonEnd + 170, 1.1, E.outCubic], [ribbonEnd + 300, .96], [ribbonEnd + 420, 1, E.outQuad]]),
+                   rot: kf(t, [[ribbonEnd - 90, -40], [ribbonEnd + 360, 0, E.pop]]) };
+    const letters = [0, 1, 2, 3].map(i => {
+      const lt = t - (1120 + i * 85);
+      return lt < 0 ? { sc: 0, op: 0 } : {
+        y: kf(lt, [[0, 170], [230, -18, E.outCubic], [360, 0, E.outQuad]]),
+        sc: kf(lt, [[0, .4], [230, 1.08, E.outCubic], [360, 1, E.outQuad]]),
+        rot: kf(lt, [[0, (i % 2 ? 14 : -14)], [360, 0, E.pop]]), op: 1 };
+    });
+    const eyeSc = kf(t, [[1520, 0], [1680, 1.16, E.outCubic], [1800, 1, E.outQuad]]);
+    // the beat: left, hold, right, hold, smile
+    const L1 = 2020, R1 = L1 + 90 + 150, C1 = R1 + 90 + 130, SMILE = C1 + 70;
+    const lookX = kf(t, [[L1, 0], [L1 + 90, -1, E.outQuad], [R1, -1], [R1 + 90, 1, E.outQuad], [C1, 1], [C1 + 70, 0, E.outQuad]]);
+    const happy = t >= SMILE;
+    const antOn = cfg.antenna !== false;
+    const antenna = antOn ? { sc: kf(t, [[SMILE + 40, 0], [SMILE + 200, 1.15, E.outCubic], [SMILE + 320, 1, E.outQuad]]),
+                              rot: G3M.g3Life.twang(t, SMILE + 200, 16) } : { sc: 0 };
+    const squash = kf(t, [[SMILE + 260, 0], [SMILE + 330, .03, E.outQuad], [SMILE + 520, 0, E.settle]]);
+    return {
+      rin: [s0, s1], rout: [0, 0], head, letters,
+      eyes: { sc: eyeSc, lookX, happy, blink: G3M.g3Life.blink(t, 1880) },
+      cheeks: clamp((t - 1650) / 200), antenna, squash,
+      sparks: clamp((t - SMILE) / 520),
+      tag: E.outCubic(clamp((t - (SMILE + 160)) / 420))
+    };
+  }
+
+  // ------------------------------------------------------------ LogoIdent
+  S.logo = function (el, cfg) {
+    el.style.background = G3M.color(cfg.background || "white");
+    const logo = G3M.Logo(layer(el, 1), cfg);
+    return { duration: cfg.duration ?? 3600, render(t) { logo.set(identState(t, logo, cfg)); } };
+  };
+
+  // ------------------------------------------------------------ LogoLoop
+  /* Seamless: frame 0 and the final frame are both an empty stage, and the
+   * ribbon that leaves on the right is the same motion that arrives on the
+   * left, so it reads as one continuous flow. */
+  S.logoLoop = function (el, cfg) {
+    el.style.background = G3M.color(cfg.background || "white");
+    const logo = G3M.Logo(layer(el, 1), { ...cfg, tagline: null });
+    const D = cfg.duration ?? 5400, OUT = D - 1350;
+    return {
+      duration: D, loop: true,
+      render(t) {
+        const st = identState(Math.min(t, OUT), logo, cfg);
+        if (t > OUT) {
+          const d = t - OUT;
+          const shrink = E.inBack(1.7)(clamp(d / 420));
+          st.head = { sc: 1 - shrink, rot: shrink * 40 };
+          st.letters = st.letters.map((l, i) => {
+            const q = E.inBack(1.7)(clamp((d - (3 - i) * 40) / 380));
+            return { ...l, sc: 1 - q, y: q * 40 };
+          });
+          st.eyes = { ...st.eyes, sc: 1 - shrink };
+          st.antenna = { sc: 1 - shrink, rot: 0 };
+          st.cheeks = 1 - shrink; st.sparks = 0;
+          const u = clamp((d - 160) / 1150);
+          const s1 = logo.outLen * E.inOutCubic(u);
+          const s0 = Math.max(0, s1 - 1200) + logo.outLen * E.inQuad(clamp((d - 900) / 450));
+          st.rout = [Math.min(s0, s1), s1];
+        }
+        logo.set(st);
+      }
+    };
+  };
+
+  // ------------------------------------------------------------ EndCard
+  S.endCard = function (el, cfg) {
+    el.style.background = G3M.color(cfg.background || "white");
+    const logo = G3M.Logo(layer(el, 1), { ...cfg, tagline: cfg.tagline ?? "Agents for a brighter tomorrow" });
+    let cta = null;
+    if (cfg.cta) {
+      cta = h("div", { text: cfg.cta }, layer(el, 2));
+      css(cta, { position: "absolute", right: "140px", top: "470px", background: C.ink, color: C.white,
+        fontFamily: G3M.FONT, fontWeight: 900, fontSize: "56px", padding: "26px 52px", borderRadius: "60px" });
+    }
+    return {
+      duration: cfg.duration ?? 2600,
+      render(t) {
+        const base = identState(3400, logo, cfg);   // the settled mark
+        const pop = kf(t, [[0, .6], [260, 1.05, E.outCubic], [400, 1, E.outQuad]]);
+        base.head.sc = pop;
+        base.letters = base.letters.map((l, i) => ({ ...l, sc: kf(t - i * 50, [[0, .5], [260, 1.05, E.outCubic], [380, 1, E.outQuad]]) }));
+        base.eyes = { ...base.eyes, happy: t > 1500, lookX: kf(t, [[700, 0], [790, -1, E.outQuad], [1100, -1], [1190, 0, E.outQuad]]),
+          blink: G3M.g3Life.blink(t, 1300) };
+        base.sparks = t > 1500 ? clamp((t - 1500) / 500) : 0;
+        logo.set(base);
+        if (cta) G3M.applyTransform(cta, G3M.textIn.pop(t - 500));
+      }
+    };
+  };
+
+})(window.G3M = window.G3M || {});
+
+</script>
+<script>/* motion/director.js */
+/* G3Video — the declarative scripting layer.
+ *
+ *   new G3Video(stage)
+ *     .scene("hero", { title: "MEET G3PO" })
+ *     .transition("circleExplosion")
+ *     .scene("video", { src: "./recordings/agents.mp4" })
+ *     .cursor({ x: 1200, y: 620 }).click()
+ *     .zoom({ x: .72, y: .34, scale: 2.4 })
+ *     .text("EVERYWHERE.", { animation: "slam" })
+ *     .transition("g3Run")
+ *     .scene("endCard", { cta: "Try g3po" });
+ *
+ * Every call appends to one Timeline, so the whole promo is a pure function
+ * of time: scrub it, loop it, or export it frame by frame.
+ */
+(function (G3M) {
+  "use strict";
+  const { h, css, s, set, C, kf, ease: E, clamp } = G3M;
+
+  G3M.G3Video = class G3Video {
+    constructor(stage, opts = {}) {
+      this.stage = stage;
+      this.tl = new G3M.Timeline();
+      this.t = 0;
+      this.cur = null;
+      this.pending = null;
+      this.fps = opts.fps || 60;
+      this._cursor = null;
+    }
+    get duration() { return this.tl.duration; }
+    timeline() { return this.tl; }
+
+    // ---------------------------------------------------------------- scenes
+    scene(type, cfg = {}) {
+      const make = G3M.scenes[type];
+      if (!make) throw new Error(`Unknown scene "${type}". Available: ${Object.keys(G3M.scenes).join(", ")}`);
+      const el = h("div", { class: "g3-scene", "data-scene": type }, this.stage.scenes);
+      css(el, { ...G3M.fill, display: "none", overflow: "hidden" });
+      const sc = make(el, cfg, this.stage);
+      const rec = { type, el, sc, start: this.t, from: this.t, to: Infinity };
+
+      // the cursor belongs to the scene it was used in; it leaves with it
+      if (this._cursor && !this._cursor._hidden && this.cur) {
+        this._cursor.hide({ at: this.t }); this._cursor._hidden = true;
+      }
+      if (this.pending && this.cur) {
+        const { name, cfg: tcfg } = this.pending;
+        const prev = this.cur;
+        const mid = h("div", {}, this.stage.scenes);
+        css(mid, { ...G3M.fill, display: "none" });
+        const fx = h("div", {}, this.stage.fx);
+        css(fx, { ...G3M.fill, display: "none" });
+        const makeT = G3M.transitions[name];
+        if (!makeT) throw new Error(`Unknown transition "${name}". Available: ${Object.keys(G3M.transitions).join(", ")}`);
+        const tr = makeT({ stage: this.stage, from: prev.el, to: el, mid, fx }, tcfg);
+        const t0 = this.t, D = tr.duration;
+        prev.to = t0 + D;
+        // visible from the moment the transition starts revealing it, but its
+        // own entrance is timed to land as it comes into view
+        rec.from = t0;
+        rec.start = t0 + D * (tcfg.introAt ?? tr.introAt ?? .45);
+        const clear = () => {
+          for (const e of [prev.el, el]) {
+            e.style.clipPath = ""; e.style.transform = ""; e.style.visibility = "";
+            e.style.zIndex = ""; e.style.boxShadow = ""; e.style.transformOrigin = "";
+          }
+          mid.style.display = "none"; fx.style.display = "none";
+        };
+        this.tl.add((lt, state) => {
+          if (state !== 0) { clear(); return; }
+          clear();
+          prev.el.style.zIndex = 1; mid.style.zIndex = 2; el.style.zIndex = 3;
+          mid.style.display = "block"; fx.style.display = "block";
+          tr.render(D ? lt / D : 1);
+        }, t0, D);
+        this.tl.mark(`${name}`, t0);
+        this.pending = null;
+        this.t = t0 + D;
+      }
+      this.tl.add((lt, state, T) => {
+        const vis = T >= rec.from && T < rec.to;
+        el.style.display = vis ? "block" : "none";
+        if (vis) sc.render(T - rec.start, T);
+      }, rec.start, 0);
+      // scenes are rendered every frame while visible, so register a long span
+      this.tl.items[this.tl.items.length - 1].duration = 1e9;
+      this.tl.mark(type, rec.start);
+      this.cur = rec;
+      this.t = Math.max(this.t, rec.start + (sc.duration || 0));
+      this.tl.extend(this.t);
+      return this;
+    }
+
+    transition(name, cfg = {}) { this.pending = { name, cfg }; return this; }
+    pause(ms = 400) { this.t += ms; this.tl.extend(this.t); return this; }
+    hold(ms = 400) { return this.pause(ms); }
+
+    // ---------------------------------------------------------------- cursor
+    get cursorApi() {
+      if (!this._cursor) {
+        const svg = G3M.svgLayer(this.stage.top, this.stage.W, this.stage.H);
+        this._cursor = G3M.Cursor(svg, { x: this.stage.W + 140, y: this.stage.H + 160, scale: 1.2 });
+        this.tl.add((lt, st, T) => this._cursor.render(T), 0, 0).duration = 1e9;
+      }
+      return this._cursor;
+    }
+    cursor(o = {}) {
+      const c = this.cursorApi, dur = o.duration ?? 700;
+      const [x, y] = this._toStage(o.x, o.y);
+      if (c._hidden) { c.show({ at: this.t }); c._hidden = false; }
+      c.move(x, y, { at: this.t, dur, ease: o.ease, bend: o.bend });
+      this.t += dur; this.tl.extend(this.t); return this;
+    }
+    click(o = {}) {
+      const c = this.cursorApi; c.click({ at: this.t });
+      const [x, y] = c.position(this.t);
+      if (this.cur && this.cur.sc.click) this.cur.sc.click(this.t - this.cur.start, x, y);
+      this.t += o.hold ?? 320; this.tl.extend(this.t); return this;
+    }
+    doubleClick(o = {}) {
+      const c = this.cursorApi; c.doubleClick({ at: this.t });
+      if (this.cur && this.cur.sc.click) this.cur.sc.click(this.t - this.cur.start);
+      this.t += o.hold ?? 480; this.tl.extend(this.t); return this;
+    }
+    drag(from, to, o = {}) {
+      const c = this.cursorApi, dur = o.duration ?? 800;
+      c.drag(this._toStage(...from), this._toStage(...to), { at: this.t, dur });
+      this.t = c.end; this.tl.extend(this.t); return this;
+    }
+    hideCursor() { this.cursorApi.hide({ at: this.t }); this.cursorApi._hidden = true; return this; }
+    showCursor() { this.cursorApi.show({ at: this.t }); this.cursorApi._hidden = false; return this; }
+
+    // Normalised coordinates (0..1) are relative to the current scene's media,
+    // if it has any, otherwise to the frame. Larger numbers are stage pixels.
+    _toStage(x = .5, y = .5) {
+      if (x > 1 || y > 1) return [x, y];
+      const m = this.cur && this.cur.sc.media;
+      if (m) return m.point(x, y);
+      return [x * this.stage.W, y * this.stage.H];
+    }
+
+    // ---------------------------------------------------------------- camera
+    zoom(o = {}) {
+      const sc = this.cur && this.cur.sc;
+      if (!sc || !sc.zoom) return this;
+      sc.zoom(this.t - this.cur.start, { x: o.x, y: o.y, scale: o.scale ?? 2, duration: o.duration ?? 900,
+        dim: o.dim, blur: o.blur, ease: o.ease });
+      this.t += o.duration ?? 900; this.tl.extend(this.t); return this;
+    }
+    zoomTo(o) { return this.zoom(o); }
+    zoomReset(o = {}) { return this.zoom({ x: .5, y: .5, scale: 1, duration: o.duration ?? 600, dim: 0, blur: 0 }); }
+    spotlight(o) {
+      const sc = this.cur && this.cur.sc;
+      if (sc && sc.spotlight) sc.spotlight(this.t - this.cur.start, o);
+      return this;
+    }
+
+    // ---------------------------------------------------------------- overlays
+    /* A giant word over the current scene. The footage dims behind it, the
+     * word lands, holds, and leaves with its exit. */
+    text(str, o = {}) {
+      const rec = this.cur; if (!rec) return this;
+      const wrap = h("div", {}, rec.el);
+      css(wrap, { ...G3M.fill, zIndex: 20, pointerEvents: "none" });
+      const dim = h("div", {}, wrap);
+      css(dim, { ...G3M.fill, background: G3M.color(o.backdrop || "ink"), opacity: 0 });
+      const bt = G3M.BigText(wrap, { text: Array.isArray(str) ? str : String(str).split("|"),
+        width: o.width ?? .92, color: o.color || (o.backdrop === "yellow" ? "ink" : "yellow"),
+        stretch: o.stretch ?? 70 });
+      const t0 = this.t, entrance = o.animation || "slam", hold = o.hold ?? 900, exitDur = 420;
+      const n = bt.lines.length, stagger = o.stagger ?? 200;
+      const inDur = (entrance === "slam" ? 520 : 560) + (n - 1) * stagger;
+      const exitAt = inDur + hold;
+      const total = exitAt + (o.exit === "none" ? 0 : exitDur);
+      this.tl.add((lt, state, T) => {
+        const local = T - t0;
+        const on = local >= 0 && T < rec.to && (o.exit === "none" || local <= total);
+        wrap.style.display = on ? "block" : "none";
+        if (!on) return;
+        const dimTo = o.dim ?? .82;
+        dim.style.opacity = kf(local, [[0, 0], [160, dimTo, E.outQuad], [exitAt, dimTo], [exitAt + 260, 0, E.inQuad]]);
+        G3M.animateText(bt, local, { entrance, stagger, exit: o.exit || "fly", exitAt, rotate: o.rotate });
+        const [sx, sy] = entrance === "slam" ? G3M.shake(local, 210, 300, 18, 3) : [0, 0];
+        bt.el.style.transform = `translate(${sx}px,${sy}px)`;
+      }, t0, 0).duration = 1e9;
+      this.t += o.advance ?? total;
+      this.tl.extend(this.t);
+      return this;
+    }
+
+    /* G3 pops into the current scene: "peek" slides up from a corner, looks at
+     * the action, blinks, and ducks away. */
+    g3(action = "peek", o = {}) {
+      const rec = this.cur; if (!rec) return this;
+      const svg = G3M.svgLayer(rec.el, this.stage.W, this.stage.H, 25);
+      const g3 = G3M.G3(svg);
+      const t0 = this.t, dur = o.duration ?? 1600, side = o.side || "left";
+      const x = side === "left" ? 190 : this.stage.W - 190, flip = side !== "left";
+      this.tl.add((lt, st, T) => {
+        const d = T - t0;
+        const on = d >= 0 && d <= dur && T < rec.to;
+        svg.style.display = on ? "block" : "none";
+        if (!on) return;
+        const up = kf(d, [[0, 420], [260, -18, E.outCubic], [380, 0, E.outQuad], [dur - 300, 0], [dur, 430, E.inBack(1.6)]]);
+        g3.set({ x, y: this.stage.H + 40 + up, scale: 1.25, flip, rot: side === "left" ? 8 : -8,
+          lookX: flip ? -1 : 1, lookY: -.35, blink: G3M.g3Life.blink(d, 700),
+          eyes: action === "happy" && d > 500 ? "happy" : action === "surprised" ? "wide" : "round",
+          antenna: G3M.g3Life.twang(d, 380, 20), armR: action === "point" ? kf(d, [[300, 0], [520, 120, E.pop]]) : 0 });
+      }, t0, 0).duration = 1e9;
+      if (o.wait !== false) { this.t += o.advance ?? 0; this.tl.extend(t0 + dur); }
+      return this;
+    }
+
+    // ---------------------------------------------------------------- output
+    player(opts) { const p = new G3M.Player(this.tl, opts); p.seek(0); return p; }
+  };
+
+  /* Convenience: run a single scene as its own timeline. */
+  G3M.single = function (stage, type, cfg) {
+    return new G3M.G3Video(stage).scene(type, cfg);
+  };
+
+})(window.G3M = window.G3M || {});
+
+</script>
+<!-- the playground -->
+<script>/* playground/effects.js */
+/* The playground's catalogue. Each effect is a small form (params) plus a
+ * function that turns the form into a G3Video script. The script shown in the
+ * playground is exactly the script that runs — edit either one. */
+(function (G3M) {
+  "use strict";
+
+  const J = v => JSON.stringify(v);
+  const obj = o => {
+    const parts = Object.entries(o).filter(([, v]) => v !== undefined && v !== "")
+      .map(([k, v]) => `${k}: ${J(v)}`);
+    const one = `{ ${parts.join(", ")} }`;
+    return one.length < 72 ? one : `{\n    ${parts.join(",\n    ")}\n  }`;
+  };
+  const lines = s => String(s).split(/\n|\|/).map(x => x.trim()).filter(Boolean);
+  const media = c => c.src && c.src !== "mock" ? { src: c.src, kind: c.kind } : {};
+
+  const P = {
+    text: (key, label, def) => ({ key, label, type: "text", def }),
+    area: (key, label, def) => ({ key, label, type: "area", def }),
+    num: (key, label, def, min = 0, max = 10000, step = 50) => ({ key, label, type: "number", def, min, max, step }),
+    pick: (key, label, def, options) => ({ key, label, type: "select", def, options }),
+    media: () => ({ key: "src", label: "Footage", type: "media", def: "mock" }),
+    bool: (key, label, def) => ({ key, label, type: "bool", def })
+  };
+  const colors = ["yellow", "ink", "white"];
+  const entrances = ["slam", "pop", "drop", "grow", "slide", "whip"];
+  const exits = ["none", "fly", "split", "drop", "shrink"];
+
+  const E = [];
+  const add = (section, id, title, note, params, script, loop = false) =>
+    E.push({ section, id, title, note, params, script, loop });
+
+  // -------------------------------------------------------------- Typography
+  add("Typography", "slam", "Slam", "A word hits the frame hard enough to flatten G3. He pops back up.",
+    [P.area("text", "Words, one line each", "PARALLEL."), P.pick("entrance", "Entrance", "slam", entrances),
+     P.pick("exit", "Exit", "none", exits), P.pick("background", "Background", "yellow", colors),
+     P.pick("foreground", "Letters", "ink", colors), P.bool("g3", "G3 gets squashed", true),
+     P.num("duration", "Duration (ms)", 2400, 800, 8000)],
+    c => `const video = new G3Video(stage)
+  .scene("slam", ${obj({ text: lines(c.text), entrance: c.entrance, exit: c.exit === "none" ? undefined : c.exit,
+    background: c.background, foreground: c.foreground, g3: c.g3, duration: c.duration })});`);
+
+  add("Typography", "sequence", "Word by word", "Each line lands on the beat. The camera punches in a touch on every word.",
+    [P.area("text", "Words, one line each", "SHIP.\nFASTER."), P.pick("entrance", "Entrance", "pop", entrances),
+     P.num("beat", "Beat (ms)", 420, 100, 2000, 20), P.pick("exit", "Exit", "split", exits),
+     P.pick("background", "Background", "white", colors), P.num("duration", "Duration (ms)", 2400, 800, 8000)],
+    c => `const video = new G3Video(stage)
+  .scene("sequence", ${obj({ text: lines(c.text), entrance: c.entrance, beat: c.beat,
+    exit: c.exit === "none" ? undefined : c.exit, background: c.background, duration: c.duration })});`);
+
+  add("Typography", "hero", "Feature hero", "Headline pops in, G3 hops on from the side and points at it.",
+    [P.area("title", "Headline, one line each", "PARALLEL\nTASKS"), P.text("subtitle", "Subtitle pill", "Run five agents at once"),
+     P.pick("mascot", "Mascot", "g3", ["g3", "dj", "g2d2", "gb8", "pix"]),
+     P.pick("background", "Background", "yellow", colors), P.num("duration", "Duration (ms)", 2600, 1000, 8000)],
+    c => `const video = new G3Video(stage)
+  .scene("hero", ${obj({ title: lines(c.title), subtitle: c.subtitle, mascot: c.mascot, background: c.background, duration: c.duration })});`);
+
+  add("Typography", "split", "Split letters", "Letters part like curtains to show the footage, then fly off.",
+    [P.text("text", "Word", "EVERYWHERE"), P.media(), P.pick("background", "Letter colour", "yellow", ["yellow", "white"]),
+     P.num("duration", "Duration (ms)", 2300, 1200, 6000)],
+    c => `const video = new G3Video(stage)
+  .scene("split", ${obj({ text: c.text, ...media(c), background: c.background, duration: c.duration })});`);
+
+  add("Typography", "overlay", "Word over footage", "Footage plays, freezes under a dim, and a giant word lands on top.",
+    [P.text("text", "Word", "EVERYWHERE."), P.media(), P.pick("animation", "Entrance", "slam", entrances),
+     P.pick("exit", "Exit", "fly", exits), P.num("hold", "Hold (ms)", 900, 100, 4000)],
+    c => `const video = new G3Video(stage)
+  .scene("video", ${obj({ ...media(c), treatment: "browser" })})
+  .pause(700)
+  .text(${J(c.text)}, ${obj({ animation: c.animation, exit: c.exit, hold: c.hold })})
+  .pause(300);`);
+
+  // -------------------------------------------------------------- Transitions
+  const TR = [
+    ["circleExplosion", "Yellow circle explosion", "A dot pops, balloons past the edges, and the next scene grows out of it."],
+    ["blackIris", "Black iris", "The frame closes to a pinpoint, holds a beat, then opens on what's next."],
+    ["diagonalSlash", "Diagonal slash", "A slanted yellow slab cuts across with a black blade leading."],
+    ["verticalPanels", "Vertical panels", "Yellow and black panels slam down in sequence, then drop away."],
+    ["wipe", "Rounded wipe", "One thick rounded band sweeps the frame clean."],
+    ["wave", "Wave", "A yellow wave rolls across, revealing the next scene behind its crest."],
+    ["squash", "Squash", "The scene flattens to a line, the line flashes, the next scene springs open."],
+    ["g3Run", "G3 run", "G3 sprints across dragging a giant yellow sheet, and the next scene is behind it."],
+    ["g3Push", "G3 haul", "G3 drags the next scene in, struggles, glances at camera, and gets swept away."],
+    ["cursorClick", "Cursor click", "A giant cursor clicks, and the click itself becomes the next scene."]
+  ];
+  for (const [name, title, note] of TR) {
+    add("Transitions", "tr-" + name, title, note,
+      [P.num("duration", "Duration (ms)", name === "g3Push" ? 1700 : name === "g3Run" ? 1150 : name === "cursorClick" ? 1100 : 900, 300, 3000),
+       P.text("from", "Outgoing word", "BEFORE."), P.media()],
+      c => `const video = new G3Video(stage)
+  .scene("slam", ${obj({ text: [c.from], g3: false, background: "white", duration: 900 })})
+  .transition(${J(name)}, ${obj({ duration: c.duration })})
+  .scene("video", ${obj({ ...media(c), treatment: "browser", entrance: "none" })})
+  .pause(900);`);
+  }
+
+  // -------------------------------------------------------------- Video
+  add("Video effects", "zoom", "Click and zoom", "Cursor clicks Run, the agents start, the camera dives in, then pulls back.",
+    [P.media(), P.pick("treatment", "Frame", "browser", Object.keys(G3M.MEDIA_FRAMES || { browser: 1 })),
+     P.num("zoomX", "Zoom target x (0–1)", .55, 0, 1, .01), P.num("zoomY", "Zoom target y (0–1)", .45, 0, 1, .01),
+     P.num("scale", "Zoom", 2.2, 1, 5, .1)],
+    c => `const video = new G3Video(stage)
+  .scene("video", ${obj({ ...media(c), treatment: c.treatment, background: "yellow" })})
+  .cursor({ x: .9, y: .09, duration: 800 })
+  .click()
+  .zoom({ x: ${c.zoomX}, y: ${c.zoomY}, scale: ${c.scale}, duration: 900 })
+  .pause(900)
+  .zoomReset({ duration: 600 })
+  .pause(400);`);
+
+  add("Video effects", "frames", "Media frames", "The same footage in any container: browser, card, circle, tilted, picture-in-picture.",
+    [P.media(), P.pick("treatment", "Frame", "tilted", Object.keys(G3M.MEDIA_FRAMES || { browser: 1 })),
+     P.pick("entrance", "Entrance", "pop", ["pop", "rise", "none"]), P.pick("background", "Background", "yellow", colors)],
+    c => `const video = new G3Video(stage)
+  .scene("video", ${obj({ ...media(c), treatment: c.treatment, entrance: c.entrance, background: c.background })})
+  .pause(1400);`);
+
+  // -------------------------------------------------------------- Cursor
+  add("Cursor", "cursorGag", "Out of the way", "A giant cursor heads straight for G3. He dives aside just in time.",
+    [P.media(), P.pick("background", "Background", "yellow", colors), P.num("duration", "Duration (ms)", 4700, 3000, 9000)],
+    c => `const video = new G3Video(stage)
+  .scene("cursorDemo", ${obj({ ...media(c), background: c.background, duration: c.duration })});`);
+
+  // -------------------------------------------------------------- Typing
+  add("Typing", "typing", "Prompt typing", "Types, second-guesses, deletes, retypes, sends. G3 reads along.",
+    [P.area("script", "Script, one step per line", "type Fix this issue\npause 420\ndelete issue\ntype entire bloody thing\npause 360\nsubmit"),
+     P.text("placeholder", "Placeholder", "Ask g3po to…"), P.num("speed", "Speed (ms per key)", 55, 15, 200, 5),
+     P.num("seed", "Rhythm seed", 5, 1, 999, 1)],
+    c => {
+      const steps = lines(c.script).map(l => {
+        const [op, ...rest] = l.split(" "); const arg = rest.join(" ");
+        return op === "pause" ? [op, Number(arg)] : op === "submit" ? [op] : [op, arg];
+      });
+      return `const video = new G3Video(stage)
+  .scene("typing", {
+    placeholder: ${J(c.placeholder)}, speed: ${c.speed}, seed: ${c.seed},
+    script: ${J(steps)}
+  });`;
+    });
+
+  // -------------------------------------------------------------- Mascots
+  add("Mascots", "reactions", "Reaction reel", "Glance, blink, double blink, suspicious tilt, surprise, proud, wave.",
+    [P.pick("mascot", "Mascot", "g3", ["g3", "dj"]), P.pick("background", "Background", "yellow", colors)],
+    c => `const video = new G3Video(stage)
+  .scene("reactions", ${obj({ mascot: c.mascot, background: c.background })});`);
+
+  add("Mascots", "agents", "One becomes many", "Parallel agents: G3 charges, pops, and the crew shoots out. He can't keep track.",
+    [P.text("agents", "Crew (comma-separated)", "g2d2, gb8, pix, dj, g3"), P.pick("background", "Background", "yellow", colors)],
+    c => `const video = new G3Video(stage)
+  .scene("agents", ${obj({ agents: c.agents.split(",").map(s => s.trim()).filter(Boolean), background: c.background })});`);
+
+  add("Mascots", "button", "The button", "G3 presses it. Nothing. He looks at you. Then everything launches.",
+    [P.pick("buttonColor", "Button", "red", ["red", "yellow", "ink"]), P.pick("background", "Background", "white", colors)],
+    c => `const video = new G3Video(stage)
+  .scene("buttonGag", ${obj({ buttonColor: c.buttonColor, background: c.background })});`);
+
+  // -------------------------------------------------------------- UI motion
+  add("UI motion", "converge", "Many into one", "Orchestration: scattered tasks converge, snap into one result, and DONE. lands.",
+    [P.text("text", "Word", "DONE."), P.num("count", "Tasks", 6, 2, 7, 1), P.pick("background", "Background", "yellow", colors)],
+    c => `const video = new G3Video(stage)
+  .scene("converge", ${obj({ text: c.text, count: c.count, background: c.background })});`);
+
+  // -------------------------------------------------------------- Logo
+  add("Logo ident", "logo", "Ident", "Ribbon flows in, spirals into G3's head, letters snap in. Look left, look right, smile.",
+    [P.text("tagline", "Tagline", "Agents for a brighter tomorrow"), P.bool("antenna", "Antenna", true),
+     P.pick("background", "Background", "white", colors), P.num("duration", "Duration (ms)", 3600, 3000, 8000)],
+    c => `const video = new G3Video(stage)
+  .scene("logo", ${obj({ tagline: c.tagline, antenna: c.antenna, background: c.background, duration: c.duration })});`);
+
+  add("Logo ident", "logoLoop", "Ident, looping", "Builds, holds, unwinds back into the ribbon and flows out. Seamless on repeat.",
+    [P.bool("antenna", "Antenna", true), P.pick("background", "Background", "white", colors),
+     P.num("duration", "Loop length (ms)", 5400, 4600, 9000)],
+    c => `const video = new G3Video(stage)
+  .scene("logoLoop", ${obj({ antenna: c.antenna, background: c.background, duration: c.duration })});`, true);
+
+  add("Logo ident", "endcard", "End card", "The settled mark with tagline and a call to action.",
+    [P.text("tagline", "Tagline", "Agents for a brighter tomorrow"), P.text("cta", "Call to action", "Try g3po"),
+     P.pick("background", "Background", "white", colors)],
+    c => `const video = new G3Video(stage)
+  .scene("endCard", ${obj({ tagline: c.tagline, cta: c.cta, background: c.background })});`);
+
+  // -------------------------------------------------------------- Combined
+  add("Combined scenes", "promo", "Promo, 20 seconds", "Hero, explosion, footage, click, zoom, EVERYWHERE., wave, agents, DONE., ident.",
+    [P.area("hero", "Hero headline", "MEET\nG3PO"), P.text("slam", "Slam word", "EVERYWHERE."), P.media()],
+    c => `const video = new G3Video(stage)
+  .scene("hero", ${obj({ title: lines(c.hero), subtitle: "Your agents, your way" })})
+  .transition("circleExplosion", { x: 1500, y: 700 })
+  .scene("video", ${obj({ ...media(c), treatment: "browser", background: "yellow" })})
+  .cursor({ x: .9, y: .09, duration: 700 })
+  .click()
+  .zoom({ x: .55, y: .45, scale: 2, duration: 800 })
+  .g3("peek", { side: "left" })
+  .pause(700)
+  .zoomReset({ duration: 500 })
+  .text(${J(c.slam)}, { animation: "slam", exit: "fly" })
+  .transition("wave")
+  .scene("agents", {})
+  .transition("diagonalSlash")
+  .scene("converge", { text: "DONE." })
+  .transition("blackIris")
+  .scene("logo", { tagline: "Agents for a brighter tomorrow" });`);
+
+  G3M.effects = E;
+})(window.G3M = window.G3M || {});
+
+</script>
+<script>/* playground/app.js */
+/* Motion playground. One stage, one effect at a time, with a scrubber, an
+ * editable settings form, and the exact script that produces the frame. */
+(function (G3M) {
+  "use strict";
+  const $ = (sel, root = document) => root.querySelector(sel);
+  const h = G3M.h;
+  const q = new URLSearchParams(location.search);
+  const RENDER = q.get("render") === "1";
+  const FORCE_SAFE = q.get("safe") === "1";   // test the eval-free path
+
+  const state = { effect: null, cfg: {}, stage: null, player: null, video: null, code: "" };
+
+  function defaults(effect) {
+    const c = {};
+    for (const p of effect.params) c[p.key] = p.def;
+    return c;
+  }
+
+  /* Eval-free fallback. Hosts with a strict content-security policy forbid
+   * new Function(), so this reads the script's chain format directly:
+   *   const video = new G3Video(stage).scene("x", {...}).pause(300)...;
+   * Arguments are JSON with relaxed rules (bare keys, single quotes, .5). */
+  function relaxedJSON(src) {
+    let out = "", i = 0;
+    while (i < src.length) {
+      const c = src[i];
+      if (c === '"' || c === "'") {
+        let j = i + 1, str = "";
+        while (j < src.length && src[j] !== c) { if (src[j] === "\\") { str += src[j] + src[j + 1]; j += 2; continue; } str += src[j++]; }
+        out += JSON.stringify(c === "'" ? str.replace(/\\'/g, "'") : JSON.parse('"' + str + '"')); i = j + 1; continue;
+      }
+      out += c; i++;
+    }
+    out = out.replace(/([{,]\s*)([A-Za-z_$][\w$]*)\s*:/g, '$1"$2":')
+             .replace(/([:\[,]\s*)-?\.(\d)/g, (m, a, d) => a + (m.includes("-") ? "-0." : "0.") + d)
+             .replace(/,\s*([}\]])/g, "$1");
+    return JSON.parse("[" + out + "]");
+  }
+  G3M.interpretScript = function (code, stage) {
+    const body = code.replace(/\/\/.*$/gm, "");
+    const start = body.indexOf("new G3Video");
+    if (start < 0) throw new Error("The script needs to create `const video = new G3Video(stage)…`.");
+    let i = body.indexOf(")", start) + 1;
+    const video = new G3M.G3Video(stage);
+    while (i < body.length) {
+      const m = /^\s*\.\s*([A-Za-z_]\w*)\s*\(/.exec(body.slice(i));
+      if (!m) break;
+      i += m[0].length;
+      let depth = 1, j = i, q = null;
+      for (; j < body.length && depth; j++) {
+        const c = body[j];
+        if (q) { if (c === "\\") j++; else if (c === q) q = null; continue; }
+        if (c === '"' || c === "'") q = c;
+        else if ("([{".includes(c)) depth++;
+        else if (")]}".includes(c)) depth--;
+      }
+      const args = body.slice(i, j - 1).trim();
+      if (typeof video[m[1]] !== "function") throw new Error(`Unknown step .${m[1]}()`);
+      video[m[1]](...(args ? relaxedJSON(args) : []));
+      i = j;
+    }
+    return video;
+  };
+
+  // ------------------------------------------------------------ build + run
+  function run(code) {
+    const host = $("#stage");
+    if (state.player) state.player.pause();
+    if (state.stage) state.stage.destroy();
+    state.stage = new G3M.Stage(host, { background: "white" });
+    const err = $("#error");
+    try {
+      let video;
+      try {
+        if (FORCE_SAFE) throw new EvalError("safe mode");
+        const fn = new Function("G3Video", "stage", "G3M", code + "\n;return typeof video !== 'undefined' ? video : null;");
+        video = fn(G3M.G3Video, state.stage, G3M);
+      } catch (e) {
+        // blocked by the page's security policy: read the script instead
+        if (!(e instanceof EvalError) && !/unsafe-eval|Content Security/i.test(e.message)) throw e;
+        video = G3M.interpretScript(code, state.stage);
+      }
+      if (!video) throw new Error("The script needs to create `const video = new G3Video(stage)…`.");
+      state.video = video;
+      state.player = new G3M.Player(video.timeline(), { loop: !!state.effect.loop || $("#loop").checked });
+      state.player.on(onTime);
+      state.player.seek(0);
+      window.g3Duration = video.duration;
+      window.g3Seek = t => { state.player.pause(); state.player.seek(t); return t; };
+      err.hidden = true;
+      const reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if (!RENDER && !reduce) state.player.play();
+    } catch (e) {
+      err.hidden = false;
+      err.textContent = "Script error: " + e.message;
+    }
+  }
+
+  function onTime(t, player) {
+    const d = player.tl.duration || 1;
+    const scrub = $("#scrub");
+    if (document.activeElement !== scrub) scrub.value = String(t / d * 1000);
+    $("#time").textContent = `${(t / 1000).toFixed(2)} s / ${(d / 1000).toFixed(2)} s`;
+    const btn = $("#play");
+    btn.textContent = player.playing ? "Pause" : "Play";
+    btn.setAttribute("aria-pressed", player.playing ? "true" : "false");
+  }
+
+  function select(effect, keepCfg) {
+    state.effect = effect;
+    state.cfg = keepCfg ? state.cfg : defaults(effect);
+    document.querySelectorAll(".rail button").forEach(b => b.classList.toggle("on", b.dataset.id === effect.id));
+    $("#title").textContent = effect.title;
+    $("#note").textContent = effect.note;
+    $("#loop").checked = !!effect.loop;
+    buildForm();
+    regenerate();
+    if (!RENDER) history.replaceState(null, "", "?effect=" + effect.id);
+  }
+
+  function regenerate() {
+    state.code = state.effect.script(state.cfg);
+    $("#code").value = state.code;
+    run(state.code);
+  }
+
+  // ------------------------------------------------------------ form
+  function buildForm() {
+    const form = $("#form");
+    form.innerHTML = "";
+    for (const p of state.effect.params) {
+      const row = h("label", { class: "field" }, form);
+      h("span", { text: p.label }, row);
+      let input;
+      if (p.type === "area") {
+        input = h("textarea", { rows: 3 }, row); input.value = state.cfg[p.key];
+      } else if (p.type === "select") {
+        input = h("select", {}, row);
+        for (const o of p.options) { const op = h("option", { value: o, text: o }, input); if (o === state.cfg[p.key]) op.selected = true; }
+      } else if (p.type === "number") {
+        input = h("input", { type: "number", min: p.min, max: p.max, step: p.step }, row); input.value = state.cfg[p.key];
+      } else if (p.type === "bool") {
+        row.classList.add("check");
+        input = h("input", { type: "checkbox" }, row); input.checked = !!state.cfg[p.key];
+        row.insertBefore(input, row.firstChild);
+      } else if (p.type === "media") {
+        const wrap = h("div", { class: "media" }, row);
+        const file = h("input", { type: "file", accept: "video/*,image/*", "aria-label": "Choose footage" }, wrap);
+        const reset = h("button", { type: "button", class: "ghost", text: "Use stand-in app" }, wrap);
+        const name = h("span", { class: "hint", text: state.cfg.src === "mock" ? "Showing the stand-in g3po app" : "Your footage" }, row);
+        file.addEventListener("change", () => {
+          const f = file.files && file.files[0]; if (!f) return;
+          state.cfg.src = URL.createObjectURL(f);
+          state.cfg.kind = f.type.startsWith("video") ? "video" : "image";
+          name.textContent = f.name; regenerate();
+        });
+        reset.addEventListener("click", () => { state.cfg.src = "mock"; delete state.cfg.kind; name.textContent = "Showing the stand-in g3po app"; regenerate(); });
+        continue;
+      } else {
+        input = h("input", { type: "text" }, row); input.value = state.cfg[p.key];
+      }
+      const commit = () => {
+        state.cfg[p.key] = p.type === "number" ? Number(input.value) : p.type === "bool" ? input.checked : input.value;
+        regenerate();
+      };
+      input.addEventListener(p.type === "text" || p.type === "area" ? "change" : "input", commit);
+      if (p.type === "text") input.addEventListener("keydown", e => { if (e.key === "Enter") commit(); });
+    }
+  }
+
+  // ------------------------------------------------------------ rail
+  function buildRail() {
+    const rail = $("#rail");
+    let section = null, group = null;
+    for (const e of G3M.effects) {
+      if (e.section !== section) {
+        section = e.section;
+        const sec = h("div", { class: "group" }, rail);
+        h("h3", { text: section }, sec);
+        group = h("div", { class: "items" }, sec);
+      }
+      const b = h("button", { type: "button", "data-id": e.id, text: e.title }, group);
+      b.addEventListener("click", () => select(e));
+    }
+  }
+
+  // ------------------------------------------------------------ transport
+  function wire() {
+    $("#play").addEventListener("click", () => state.player && state.player.toggle());
+    $("#replay").addEventListener("click", () => state.player && state.player.replay());
+    $("#back").addEventListener("click", () => { if (!state.player) return; state.player.pause(); state.player.seek(state.player.t - 1000 / 60); });
+    $("#fwd").addEventListener("click", () => { if (!state.player) return; state.player.pause(); state.player.seek(state.player.t + 1000 / 60); });
+    const scrub = $("#scrub");
+    scrub.addEventListener("input", () => {
+      if (!state.player) return;
+      state.player.pause(); state.player.seek(Number(scrub.value) / 1000 * state.player.tl.duration);
+    });
+    $("#speed").addEventListener("change", e => { if (state.player) state.player.rate = Number(e.target.value); });
+    $("#loop").addEventListener("change", e => { if (state.player) state.player.loop = e.target.checked; });
+    $("#runCode").addEventListener("click", () => run($("#code").value));
+    $("#resetCode").addEventListener("click", () => regenerate());
+    $("#copy").addEventListener("click", async () => {
+      try { await navigator.clipboard.writeText($("#code").value); $("#copy").textContent = "Copied"; }
+      catch (e) { $("#code").select(); $("#copy").textContent = "Selected"; }
+      setTimeout(() => $("#copy").textContent = "Copy", 1400);
+    });
+    document.addEventListener("keydown", e => {
+      if (/input|textarea|select/i.test(document.activeElement.tagName)) return;
+      if (e.code === "Space") { e.preventDefault(); state.player && state.player.toggle(); }
+      if (e.key === "ArrowLeft") $("#back").click();
+      if (e.key === "ArrowRight") $("#fwd").click();
+      if (e.key === "r") $("#replay").click();
+    });
+  }
+
+  function start() {
+    if (RENDER) document.body.classList.add("render");
+    buildRail();
+    wire();
+    const want = q.get("effect");
+    const e = G3M.effects.find(x => x.id === want) || G3M.effects[0];
+    select(e);
+  }
+
+  const ready = document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve();
+  Promise.race([ready, new Promise(r => setTimeout(r, 1500))]).then(start);
+})(window.G3M = window.G3M || {});
+
+</script>
+</body>
+</html>

@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<title>g3po motion playground</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1C1D1F; --ink-2: #26282B; --ink-3: #34373B; --line: #3C3F44;
+    --yellow: #FFC400; --white: #F7F3EA; --mute: #A8ABB0;
+    --font: 'Archivo', 'Arial Black', 'Helvetica Neue', Arial, sans-serif;
+    --mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+  :root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+  body { margin: 0; background: var(--ink); color: var(--white); font-family: var(--font); font-size: 15px;
+         line-height: 1.45; -webkit-font-smoothing: antialiased; }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  :focus-visible { outline: 3px solid var(--yellow); outline-offset: 2px; }
+
+  header { display: flex; align-items: center; gap: 14px; padding: 16px 24px; border-bottom: 1px solid var(--line); }
+  header .mark { width: 44px; height: 32px; flex: none; }
+  header h1 { margin: 0; font-size: 22px; font-weight: 900; font-stretch: 88%; letter-spacing: -.01em; }
+  header p { margin: 0 0 0 auto; color: var(--mute); font-size: 13px; }
+
+  .shell { display: grid; grid-template-columns: 250px minmax(0, 1fr); min-height: calc(100vh - 65px); }
+  .rail { border-right: 1px solid var(--line); padding: 18px 14px 40px; overflow-y: auto; max-height: calc(100vh - 65px);
+          position: sticky; top: 0; }
+  .rail h3 { margin: 18px 10px 8px; font-size: 13px; font-weight: 700; color: var(--mute); }
+  .rail .group:first-child h3 { margin-top: 2px; }
+  .rail .items { display: flex; flex-direction: column; gap: 2px; }
+  .rail button { text-align: left; border: 0; background: transparent; padding: 8px 12px; border-radius: 20px;
+                 cursor: pointer; font-weight: 600; font-size: 15px; }
+  .rail button:hover { background: var(--ink-2); }
+  .rail button.on { background: var(--yellow); color: var(--ink); font-weight: 800; }
+
+  main { padding: 22px 28px 60px; min-width: 0; }
+  .head { display: flex; align-items: baseline; gap: 18px; flex-wrap: wrap; margin-bottom: 14px; }
+  .head h2 { margin: 0; font-size: 40px; line-height: 1; font-weight: 900; font-stretch: 72%; letter-spacing: -.015em; }
+  .head p { margin: 0; color: var(--mute); max-width: 62ch; }
+
+  .stagewrap { border-radius: 18px; overflow: hidden; background: #000; }
+  #stage { position: relative; width: 100%; }
+
+  .transport { display: flex; align-items: center; gap: 8px; margin: 14px 0 22px; flex-wrap: wrap; }
+  .transport button, .panel button { border: 1px solid var(--line); background: var(--ink-2); padding: 9px 16px;
+    border-radius: 22px; cursor: pointer; font-weight: 700; }
+  .transport button:hover, .panel button:hover { border-color: var(--mute); }
+  #play { background: var(--yellow); color: var(--ink); border-color: var(--yellow); min-width: 86px; }
+  .transport .step { padding: 9px 12px; min-width: 42px; }
+  #scrub { flex: 1 1 200px; accent-color: var(--yellow); min-width: 140px; }
+  #time { font-variant-numeric: tabular-nums; color: var(--mute); min-width: 120px; text-align: right; font-size: 14px; }
+  .transport select { background: var(--ink-2); border: 1px solid var(--line); border-radius: 22px; padding: 8px 12px; }
+  .transport label { display: flex; align-items: center; gap: 6px; color: var(--mute); font-size: 14px; }
+
+  .panels { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 20px; }
+  .panel { background: var(--ink-2); border-radius: 16px; padding: 18px 20px 20px; min-width: 0; }
+  .panel h4 { margin: 0 0 12px; font-size: 17px; font-weight: 800; }
+  .panel .row { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+  #runCode { background: var(--yellow); color: var(--ink); border-color: var(--yellow); }
+
+  .field { display: grid; gap: 6px; margin-bottom: 14px; }
+  .field > span { font-size: 13px; color: var(--mute); font-weight: 600; }
+  .field input[type=text], .field input[type=number], .field select, .field textarea {
+    width: 100%; background: var(--ink); border: 1px solid var(--line); border-radius: 10px; padding: 9px 12px; }
+  .field textarea { resize: vertical; min-height: 64px; }
+  .field.check { grid-template-columns: auto 1fr; align-items: center; }
+  .field.check input { width: 18px; height: 18px; accent-color: var(--yellow); }
+  .field .media { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .field .media input { font-size: 13px; max-width: 100%; }
+  .field .hint { font-size: 12px; color: var(--mute); }
+  .ghost { border: 1px solid var(--line); background: transparent; border-radius: 20px; padding: 7px 12px; cursor: pointer; font-size: 13px; font-weight: 700; }
+
+  #code { width: 100%; min-height: 300px; background: var(--ink); color: #E9E4D6; border: 1px solid var(--line);
+          border-radius: 12px; padding: 14px 16px; font-family: var(--mono); font-size: 13px; line-height: 1.55;
+          resize: vertical; white-space: pre; overflow: auto; tab-size: 2; }
+  #error { margin-top: 12px; background: #3A1E1A; color: #FFC9BF; border-radius: 10px; padding: 10px 14px; font-size: 14px; }
+
+  @media (max-width: 980px) {
+    .shell { grid-template-columns: 1fr; }
+    .rail { position: static; max-height: none; border-right: 0; border-bottom: 1px solid var(--line);
+            display: flex; gap: 14px; overflow-x: auto; padding: 12px 14px; }
+    .rail .group { flex: none; }
+    .rail h3 { margin: 0 6px 6px; }
+    .rail .items { flex-direction: row; }
+    .rail button { white-space: nowrap; }
+    main { padding: 16px 14px 48px; }
+    .head h2 { font-size: 32px; }
+    .panels { grid-template-columns: 1fr; }
+    header p { display: none; }
+  }
+
+  /* render mode: only the stage, at native size, for frame export */
+  body.render { background: #000; }
+  body.render header, body.render .rail, body.render .head, body.render .transport,
+  body.render .panels { display: none; }
+  body.render .shell { display: block; min-height: 0; }
+  body.render main { padding: 0; }
+  body.render .stagewrap { width: 1920px; border-radius: 0; }
+</style>
+</head>
+<body>
+<header>
+  <svg class="mark" viewBox="0 0 88 64" aria-hidden="true">
+    <rect x="3" y="3" width="82" height="58" rx="27" fill="#FFC400" stroke="#F7F3EA" stroke-width="0"/>
+    <circle cx="30" cy="31" r="10" fill="#1C1D1F"/><circle cx="58" cy="31" r="10" fill="#1C1D1F"/>
+    <circle cx="27" cy="28" r="3.4" fill="#fff"/><circle cx="55" cy="28" r="3.4" fill="#fff"/>
+  </svg>
+  <h1>g3po motion playground</h1>
+  <p>Space plays, arrows step one frame, R replays</p>
+</header>
+<div class="shell">
+  <nav class="rail" id="rail" aria-label="Effects"></nav>
+  <main>
+    <div class="head"><h2 id="title"></h2><p id="note"></p></div>
+    <div class="stagewrap"><div id="stage"></div></div>
+    <div class="transport" role="group" aria-label="Playback">
+      <button id="play" type="button">Play</button>
+      <button id="replay" type="button">Replay</button>
+      <button id="back" class="step" type="button" aria-label="Back one frame">&#8249;</button>
+      <button id="fwd" class="step" type="button" aria-label="Forward one frame">&#8250;</button>
+      <input id="scrub" type="range" min="0" max="1000" value="0" aria-label="Scrub">
+      <span id="time">0.00 s</span>
+      <select id="speed" aria-label="Speed">
+        <option value="0.25">0.25×</option><option value="0.5">0.5×</option><option value="1" selected>1×</option>
+      </select>
+      <label><input id="loop" type="checkbox"> Loop</label>
+    </div>
+    <div class="panels">
+      <section class="panel">
+        <h4>Settings</h4>
+        <form id="form" onsubmit="return false"></form>
+      </section>
+      <section class="panel">
+        <h4>Script</h4>
+        <textarea id="code" spellcheck="false" aria-label="G3Video script"></textarea>
+        <div class="row">
+          <button id="runCode" type="button">Run script</button>
+          <button id="resetCode" type="button">Reset to settings</button>
+          <button id="copy" type="button">Copy</button>
+        </div>
+        <div id="error" hidden></div>
+      </section>
+    </div>
+  </main>
+</div>
+
+<!-- the toolkit -->
+<script src="motion/core.js"></script>
+<script src="motion/text.js"></script>
+<script src="motion/cursor.js"></script>
+<script src="motion/typing.js"></script>
+<script src="motion/video.js"></script>
+<script src="characters/g3.js"></script>
+<script src="characters/friends.js"></script>
+<script src="transitions/shapes.js"></script>
+<script src="transitions/sweeps.js"></script>
+<script src="transitions/character.js"></script>
+<script src="scenes/typography.js"></script>
+<script src="scenes/media.js"></script>
+<script src="scenes/mascots.js"></script>
+<script src="scenes/logo.js"></script>
+<script src="motion/director.js"></script>
+<!-- the playground -->
+<script src="playground/effects.js"></script>
+<script src="playground/app.js"></script>
+</body>
+</html>
